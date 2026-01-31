@@ -14,6 +14,7 @@ Electron을 사용해 웹 기술로 데스크톱 애플리케이션을 구현했
 - FullCalendar
 
 ## Project Structure
+```text
 my_first_todo_list/
 ├─ index.html
 ├─ main.js
@@ -28,6 +29,7 @@ my_first_todo_list/
 │    └─ locales-all.min.js
 │    └─ LICENSE.txt
 └─ README.md
+```
 
 ## How to Run (Development)
 ```bash
