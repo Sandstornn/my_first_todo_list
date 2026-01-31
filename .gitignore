@@ -1,0 +1,12 @@
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+todo_list_exe_folders/
+*.exe
+*.zip
+*.blockmap
+
+# misc
+.DS_Store

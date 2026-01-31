@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calendar To-Do</title>
+
+  <!-- FullCalendar v5 CSS -->
+  <link rel="stylesheet" href="./vendor/fullcalendar-5.11.5/main.min.css" />
+
+  <!-- FullCalendar v5 JS -->
+  <script src="./vendor/fullcalendar-5.11.5/main.min.js"></script>
+
+  
+  <!-- 한글 -->
+  <script src="./vendor/fullcalendar-5.11.5/locales-all.min.js"></script>
+  
+  <!-- 스타일시트 -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">TodoCalendar</div>
+      <div class="brand-sub">날짜 클릭 → 오늘의 체크리스트</div>
+    </div>
+
+    <div class="actions">
+      <button id="btnExport" class="btn">data download</button>
+      <label class="btn btn-secondary" for="fileImport">data upload</label>
+      <input id="fileImport" type="file" accept="application/json" hidden />
+    </div>
+  </header>
+
+  <main class="layout">
+    <div class="month-header">
+      <!--화살표 out-->
+      <!--<button id="monthPrev" class="month-nav">‹</button>-->
+      <div id="monthStrip" class="month-strip"></div>
+      <!--<button id="monthNext" class="month-nav">›</button>-->
+    </div>
+
+    <section class="calendar-wrap">
+      <div id="calendar"></div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modalBackdrop" class="backdrop hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div>
+          <div id="modalTitle" class="modal-title">2026-01-27</div>
+          <div class="modal-sub">Enter로 추가 · 클릭해서 수정 · ESC로 닫기</div>
+        </div>
+        <button id="btnClose" class="icon-btn" aria-label="닫기">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="todoList" class="todo-list"></div>
+
+        <div class="todo-add">
+          <input id="todoInput" class="todo-input" type="text" placeholder="할 일을 입력하고 Enter…" />
+          <button id="btnAdd" class="btn">추가</button>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btnClearDone" class="btn btn-secondary">완료 항목 정리</button>
+          <button id="btnDeleteDay" class="btn btn-danger">이 날짜 전체 삭제</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Year / Month Picker Modal -->
+<div id="ymBackdrop" class="backdrop hidden">
+  <div class="modal" style="width:360px">
+    <div class="modal-header">
+      <div class="modal-title">연 · 월 선택</div>
+      <button id="btnYmClose" class="icon-btn">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="ym-picker">
+        <div id="yearList" class="ym-column"></div>
+        <div id="monthList" class="ym-column"></div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="btnYmConfirm" class="btn">확인</button>
+    </div>
+  </div>
+</div>
+
+  <!-- Confirm Modal -->
+<div id="confirmBackdrop" class="backdrop hidden" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" style="width:320px">
+    <div class="modal-header">
+      <div class="modal-title">확인</div>
+    </div>
+
+    <div class="modal-body">
+      <div id="confirmMessage" style="padding:8px 0">
+        정말 삭제할까요?
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="confirmNo" class="btn btn-secondary">취소</button>
+      <button id="confirmYes" class="btn btn-danger">확인</button>
+    </div>
+  </div>
+</div>
+
+  <script src="renderer.js"></script>
+</body>

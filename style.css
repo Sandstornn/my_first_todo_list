@@ -1,0 +1,580 @@
+/*
+body {
+  font-family: system-ui, sans-serif;
+  background: #f5f5f5;
+  padding: 20px;
+}
+
+h2 {
+  text-align: center;
+}
+
+#calendar {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 300px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+*/
+:root{
+  --bg:#f6f7fb;
+  --panel:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --shadow: 0 10px 30px rgba(0,0,0,.10);
+  --radius: 14px;
+}
+
+*{ box-sizing:border-box; }
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+  color:var(--text);
+  background:var(--bg);
+}
+
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 18px;
+  background:rgba(246,247,251,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand-title{
+  font-weight:800;
+  letter-spacing:.2px;
+}
+.brand-sub{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.layout{
+  max-width: 1100px;
+  margin: 18px auto 0;
+  padding: 0 18px 24px;
+}
+
+.calendar-wrap{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  /*padding-top: 18px;*/
+  padding-bottom: 24px;
+}
+
+/* buttons */
+.btn{
+  appearance:none;
+  border:1px solid #d1d5db;
+  background:#111827;
+  color:#fff;
+  border-radius: 12px;
+  padding:10px 12px;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+}
+.btn:hover{ opacity:.92; }
+.btn:active{ transform: translateY(1px); }
+
+.btn-secondary{
+  background:#ffffff;
+  color:#111827;
+}
+
+.btn-danger{
+  background:#ef4444;
+  border-color:#ef4444;
+}
+
+.icon-btn{
+  border:none;
+  background:transparent;
+  font-size:18px;
+  cursor:pointer;
+  padding:6px 8px;
+  border-radius:10px;
+}
+.icon-btn:hover{
+  background:#f3f4f6;
+}
+
+/* Modal */
+.backdrop{
+  position:fixed;
+  inset:0;
+  background: rgba(17,24,39,.35);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  z-index: 9999;
+}
+.hidden{ display:none; }
+
+.modal{
+  width: min(480px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+  z-index: 10000;
+}
+
+.modal-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+#ymBackdrop .modal-header {
+  margin-top: 12px;
+  margin-bottom: 0;
+  padding-bottom:0;
+}
+
+.modal-title{
+  font-weight:900;
+  font-size:18px;
+}
+.modal-sub{
+  margin-top:4px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.modal-body{
+  padding: 12px 16px 16px;
+}
+#ymBackdrop .modal-body {
+  margin-top: 20px;
+  padding-top:12px;
+  margin-bottom:0;
+  padding-bottom:0;
+}
+
+.todo-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding: 8px 0 12px;
+  max-height: 360px;
+  overflow:auto;
+}
+
+.todo-item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding: 10px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background:#fff;
+}
+
+.todo-item:hover .todo-del{ opacity: 1; }
+
+.todo-check{
+  margin-top: 2px;
+  width:18px;
+  height:18px;
+}
+
+.todo-text{
+  flex:1;
+  line-height:1.3;
+  padding: 2px 4px;
+  border-radius:8px;
+  outline:none;
+}
+.todo-text[contenteditable="true"]:focus{
+  background:#f9fafb;
+}
+
+.todo-done .todo-text{
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+.todo-del{
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  opacity:0;
+  padding:4px 6px;
+  border-radius:8px;
+}
+.todo-del:hover{
+  background:#f3f4f6;
+}
+
+.todo-add{
+  display:flex;
+  gap:10px;
+  padding-top: 8px;
+}
+
+.todo-input{
+  flex:1;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size:14px;
+  outline:none;
+}
+.todo-input:focus{
+  border-color:#c7d2fe;
+  box-shadow: 0 0 0 4px rgba(99,102,241,.12);
+}
+
+.modal-footer{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding-top: 12px;
+}
+#ymBackdrop .modal-footer {
+  justify-content: flex-end;
+}
+
+/* Calendar tweaks (js-year-calendar) */
+.calendar .calendar-header{
+  font-weight:800;
+}
+.calendar .calendar-header .year-title{
+  font-size: 18px;
+}
+.calendar .calendar-header .prev,
+.calendar .calendar-header .next{
+  border-radius: 12px;
+}
+.calendar .calendar-header .prev:hover,
+.calendar .calendar-header .next:hover{
+  background:#f3f4f6;
+}
+
+/* dot marker */
+.day-dot{
+  display:inline-block;
+  width:6px;
+  height:6px;
+  border-radius: 999px;
+  background:#111827;
+  margin-left:6px;
+  vertical-align: middle;
+  opacity: .85;
+}
+
+.month-header{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  padding:12px;
+  background:#fff;
+  border-radius:14px;
+  box-shadow: var(--shadow);
+  margin-bottom:14px;
+}
+
+.month-nav{
+  border:none;
+  background:#f3f4f6;
+  border-radius:12px;
+  padding:6px 12px;
+  font-size:18px;
+  cursor:pointer;
+}
+
+.month-strip{
+  display:flex;
+  gap:100px;
+  align-items:center;
+  overflow:hidden;
+  padding: 6px 8px; 
+}
+
+.month-item{
+  font-size:15px;
+  color:#9ca3af;
+  cursor:pointer;
+  white-space:nowrap;
+  font-weight:600;
+}
+
+.month-item.active{
+  color:#111827;
+  font-weight:900;
+  font-size:17px;
+}
+
+/* Year-Month Picker */
+.ym-picker{
+  display:flex;
+  gap:20px;
+  justify-content:center;
+}
+
+.ym-column{
+  width:120px;
+  max-height:220px;
+  overflow-y:auto;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:6px 0;
+  scroll-behavior:smooth;
+  /* 스크롤 바 안보이게 */
+  scrollbar-width: none; 
+}
+
+.ym-item{
+  padding:10px;
+  text-align:center;
+  cursor:pointer;
+  font-weight:600;
+  color:#9ca3af;
+}
+
+.ym-item.active{
+  color:#111827;
+  font-weight:900;
+  background:#f3f4f6;
+  border-radius:8px;
+}
+
+/*스크롤 바 안보이게*/
+.ym-column::-webkit-scrollbar {
+  display: none;                /* Chrome, Edge, Safari */
+}
+
+
+/* ===== 대댓글 래퍼 ===== */
+.todo-sub-wrap{
+  margin-left: 24px;
+  padding-left: 12px;
+  border-left: 2px solid #e5e7eb;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* ===== 대댓글 아이템 ===== */
+.todo-sub-item{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:8px 10px;
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  font-size:14px;
+  position:relative;
+}
+
+/* 체크박스 */
+.todo-sub-item input[type="checkbox"]{
+  width:16px;
+  height:16px;
+  margin-top:2px;
+}
+
+/* 텍스트 */
+.todo-sub-item div[contenteditable]{
+  flex:1;
+  padding:2px 4px;
+  border-radius:6px;
+}
+.todo-sub-item div[contenteditable]:focus{
+  background:#eef2ff;
+}
+
+/* 삭제 버튼 */
+.todo-sub-item button{
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  opacity:.6;
+  padding:4px;
+}
+.todo-sub-item button:hover{
+  opacity:1;
+}
+
+/* + 세부 항목 추가 버튼 */
+.todo-sub-wrap > .btn{
+  align-self:flex-start;
+  margin-top:6px;
+  font-size:13px;
+  padding:6px 10px;
+  background:#eef2ff;
+  color:#4338ca;
+  border-color:#c7d2fe;
+}
+
+.todo-sub-input:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* 월화수목금토일 배경에다 색연필 칠한 느낌을 주고 싶었다.*/
+.fc-col-header-cell-cushion {
+  position: relative;
+  padding: 4px 10px;
+  font-weight: 500;
+  color: #333;
+  z-index: 1;
+}
+
+.fc-col-header-cell-cushion::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-1.2deg);
+  height: 1.1em;
+
+  background:
+    /* 메인 색연필 스트로크 */
+    linear-gradient(
+      to right,
+      rgba(247, 180, 180, 0.65),
+      rgba(247, 180, 180, 0.45),
+      rgba(247, 180, 180, 0.6)
+    ),
+    /* 연필 결 + 종이 비침 */
+    repeating-linear-gradient(
+      to right,
+      rgba(255,255,255,0.35),
+      rgba(255,255,255,0.35) 2px,
+      rgba(255,255,255,0) 4px,
+      rgba(255,255,255,0) 7px
+    );
+
+  border-radius: 5px;
+  filter: blur(0.4px);
+  opacity: 0.9;
+
+  z-index: -1;
+}
+
+.fc-col-header-cell-cushion::after {
+  content: "";
+  position: absolute;
+  left: -6px;
+  right: -10px;
+  top: 60%;
+  height: 0.9em;
+
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(255,255,255,0.25),
+      rgba(255,255,255,0.25) 1px,
+      rgba(255,255,255,0) 3px,
+      rgba(255,255,255,0) 6px
+    );
+
+  transform: rotate(0.8deg);
+  opacity: 0.6;
+  z-index: -2;
+}
+/* 월 */
+.fc-day-mon .fc-col-header-cell-cushion::before {
+  background: rgba(255, 230, 120, 0.6);
+}
+
+/* 화 */
+.fc-day-tue .fc-col-header-cell-cushion::before {
+  background: rgba(255, 200, 120, 0.6);
+}
+
+/* 수 */
+.fc-day-wed .fc-col-header-cell-cushion::before {
+  background: rgba(200, 230, 140, 0.6);
+}
+
+/* 목 */
+.fc-day-thu .fc-col-header-cell-cushion::before {
+  background: rgba(140, 220, 200, 0.6);
+}
+
+/* 금 */
+.fc-day-fri .fc-col-header-cell-cushion::before {
+  background: rgba(180, 160, 255, 0.6);
+}
+
+
+/* 토 */
+.fc-day-sat .fc-col-header-cell-cushion::before {
+  background: rgba(150, 200, 255, 0.6);
+}
+
+/* 일 */
+.fc-day-sun .fc-col-header-cell-cushion::before {
+  background: rgba(255, 150, 150, 0.6);
+}
+
+/*캘린더를 위아래로 쫌만 늘려볼까?
+.fc-view-harness {
+  min-height: calc(100% + 24px);
+}
+*/
+
+/* 여기 왜 확인이 빨간색이지?? */
+#confirmBackdrop .modal-footer {
+
+  justify-content: flex-end;
+  z-index: 10001;
+}
