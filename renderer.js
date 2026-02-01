@@ -10,6 +10,262 @@ function setStore(data) {
   localStorage.setItem("todos", JSON.stringify(data));
 }
 
+/////////////////////////////////////////////////////////////////
+/* ---------- report detail modal ---------- */
+
+/* ---------- function rendering report detail modal ---------- */
+function openReportDetail(title, dateList) {
+  const store = getStore();
+  const content = document.getElementById("reportDetailContent");
+  const backdrop = document.getElementById("reportDetailBackdrop");
+
+  document.getElementById("reportDetailTitle").textContent = title;
+  content.innerHTML = "";
+
+  dateList.forEach(date => {
+    if (!store[date]) return;
+
+    const dayBlock = document.createElement("div");
+    dayBlock.className = "report-day";
+
+    dayBlock.innerHTML = `
+      <div class="report-day-title">${formatDateKorean(date)}</div>
+    `;
+
+    store[date].forEach(t => {
+      const line = document.createElement("div");
+      line.className = `report-item ${t.done ? "done" : "todo"}`;
+      line.textContent = `${t.done ? "✔" : "✖"} ${t.text}`;
+      dayBlock.appendChild(line);
+    });
+
+    content.appendChild(dayBlock);
+  });
+
+  backdrop.classList.remove("hidden");
+  // 닫기 버튼
+  document.getElementById("btnCloseReport").onclick = () => {
+  document.getElementById("reportDetailBackdrop").classList.add("hidden");
+};
+}
+/* ---------- 주 클릭시 날짜 범위 ---------- */
+function getWeekRange(year, month, weekIndex) {
+  const startDay = (weekIndex - 1) * 7 + 1;
+  const start = new Date(year, month, startDay);
+  const end = new Date(year, month, startDay + 6);
+  return getDatesInRange(start, end);
+}
+/* ---------- 월 클릭시 날짜 범위 ---------- */
+function getMonthRange(year, month) {
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0);
+  return getDatesInRange(start, end);
+}
+/* ---------- 날짜 범위 생성 유틸 ---------- */
+function getDatesInRange(start, end) {
+  const dates = [];
+  const cur = new Date(start);
+
+  while (cur <= end) {
+    dates.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+/* ---------- 날짜 포맷 유틸 ---------- */
+function formatDateKorean(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+/////////////////////////////////////////////////////////////////
+
+
+/* ---------- get last 12 months ---------- */
+function getLast12Months() {
+  const now = new Date();
+
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+
+    return {
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+      label: `${d.getMonth() + 1}월`
+    };
+  });
+}
+
+
+/* ---------- calculate progress ---------- */
+function calcProgress(todos) {
+  if (!todos || todos.length === 0) return 0;
+
+  const done = todos.filter(t => t.done).length;
+  return Math.round((done / todos.length) * 100);
+}
+
+function progressClass(p) {
+  if (p === 0) return "p0";
+  if (p < 25) return "p25";
+  if (p < 50) return "p50";
+  if (p < 75) return "p75";
+  return "p100";
+}
+
+/* ---------- function rendering report ---------- */
+function renderReport() {
+  const store = getStore();
+  const months = getLast12Months();
+
+  const monthSummaryEl = document.getElementById("monthSummary");
+  const matrixEl = document.getElementById("progressMatrix");
+
+  if (!monthSummaryEl || !matrixEl) return;
+
+  /* ---------- 월별 요약 ---------- */
+  monthSummaryEl.innerHTML = "";
+
+  months.forEach(m => {
+    let total = 0;
+    let done = 0;
+
+    Object.keys(store).forEach(date => {
+      if (date.startsWith(m.key)) {
+        store[date].forEach(t => {
+          total++;
+          if (t.done) done++;
+        });
+      }
+    });
+
+    const percent = total ? Math.round((done / total) * 100) : 0;
+
+    // 🔥 month-card를 DOM으로 생성
+    const monthCard = document.createElement("div");
+    monthCard.className = "month-card";
+    monthCard.innerHTML = `
+      ${m.label}
+      <div class="percent">${percent}%</div>
+    `;
+
+    // ✅ 월 클릭 이벤트
+    const [year, month] = m.key.split("-").map(Number);
+    monthCard.onclick = () => {
+      const dates = getMonthRange(year, month - 1);
+      openReportDetail(`${year}년 ${month}월`, dates);
+    };
+
+    monthSummaryEl.appendChild(monthCard);
+  });
+
+  /* ---------- 월 × 주 진행률 ---------- */
+  matrixEl.innerHTML = "";
+
+  // 헤더
+  matrixEl.appendChild(document.createElement("div"));
+  months.forEach(m => {
+    const header = document.createElement("div");
+    header.className = "matrix-header";
+    header.textContent = m.label;
+    matrixEl.appendChild(header);
+  });
+
+  // 1~5주
+  for (let week = 1; week <= 5; week++) {
+    const weekLabel = document.createElement("div");
+    weekLabel.className = "week-label";
+    weekLabel.textContent = `${week}주`;
+    matrixEl.appendChild(weekLabel);
+
+    months.forEach(m => {
+      let weekTodos = [];
+
+      Object.keys(store).forEach(date => {
+        if (!date.startsWith(m.key)) return;
+
+        const d = new Date(date);
+        const weekIndex = Math.ceil(d.getDate() / 7);
+        if (weekIndex === week) {
+          weekTodos.push(...store[date]);
+        }
+      });
+
+      const p = calcProgress(weekTodos);
+      const showText = p > 0;
+      const textClass = p >= 60 ? "inside" : "outside";
+
+      // 🔥 heat-cell을 DOM으로 생성
+      const cell = document.createElement("div");
+      cell.className = "heat-cell";
+      if (p > 0) cell.title = `${p}%`;
+
+      cell.innerHTML = `
+        <div class="bar">
+          <div class="bar-fill" style="width:${p}%"></div>
+          ${
+            showText
+              ? `<span class="bar-text ${textClass}">${p}%</span>`
+              : ``
+          }
+        </div>
+      `;
+
+      // ✅ 주 클릭 이벤트
+      const [year, month] = m.key.split("-").map(Number);
+      cell.onclick = () => {
+        const dates = getWeekRange(year, month - 1, week);
+        openReportDetail(`${year}년 ${month}월 · ${week}주`, dates);
+      };
+
+      matrixEl.appendChild(cell);
+    });
+  }
+}
+
+
+
+
+
+
+/* ---------- export / import data ---------- */
+function exportData() {
+  const data = localStorage.getItem("todos") || "{}";
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "todo-data.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  alert("todo-data.json 파일이 다운로드 폴더에 저장되었습니다.");
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (typeof parsed !== "object") throw new Error();
+
+      const oldStore = getStore();        // 기존 데이터
+      const mergedStore = {               // ✅ merge
+        ...oldStore,
+        ...parsed
+      };
+
+      localStorage.setItem("todos", JSON.stringify(mergedStore));
+      alert("데이터를 불러왔습니다.");
+      location.reload();
+    } catch(e) {
+      alert("올바른 JSON 파일이 아닙니다.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+
 /* ---------- confirm modal ---------- */
 function openConfirm(message,no_danger = false) {
   const backdrop = document.getElementById("confirmBackdrop");
@@ -396,4 +652,41 @@ document.addEventListener("keydown", e => {
       }
     }
   });
+  // =========================
+  // 🔽 페이지 슬라이드 코드 (맨 마지막!)
+  // =========================
+  const wrapper = document.getElementById("pageWrapper");
+
+  document.getElementById("toReport")?.addEventListener("click", () => {
+    wrapper.classList.add("show-report");
+
+    // ✅ 리포트 렌더링 여기서 호출
+    renderReport();
+  });
+
+  document.getElementById("toCalendar")?.addEventListener("click", () => {
+    wrapper.classList.remove("show-report");
+  });
+
+  // =========================
+// export / import 이벤트 연결
+// =========================
+document.getElementById("btnExportCalendar")
+  ?.addEventListener("click", exportData);
+
+document.getElementById("btnExportReport")
+  ?.addEventListener("click", exportData);
+
+document.getElementById("fileImportCalendar")
+  ?.addEventListener("change", e => {
+    if (e.target.files[0]) importData(e.target.files[0]);
+  });
+
+document.getElementById("fileImportReport")
+  ?.addEventListener("change", e => {
+    if (e.target.files[0]) importData(e.target.files[0]);
+  });
+
+
 };
+

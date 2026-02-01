@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="pageWrapper">
+    <section id="calendarPage" class="page">
   <header class="topbar">
     <div class="brand">
       <div class="brand-title">TodoCalendar</div>
@@ -25,9 +27,9 @@
     </div>
 
     <div class="actions">
-      <button id="btnExport" class="btn">data download</button>
-      <label class="btn btn-secondary" for="fileImport">data upload</label>
-      <input id="fileImport" type="file" accept="application/json" hidden />
+      <button id="btnExportCalendar" class="btn">data download</button>
+      <label class="btn btn-secondary" for="fileImportCalendar">data upload</label>
+      <input id="fileImportCalendar" type="file" accept="application/json" hidden />
     </div>
   </header>
 
@@ -42,7 +44,57 @@
     <section class="calendar-wrap">
       <div id="calendar"></div>
     </section>
+    <button id="toReport" class="go-down">▼</button>
   </main>
+  </section>
+
+  <!-- 아랫쪽 두번째 페이지.(진행률 표시용)-->
+  <section id="reportPage" class="page">
+  <header class="topbar">
+    <button id="toCalendar" class="go-up">▲</button>
+    <div class="brand">
+      <div class="brand-title">리포트</div>
+      <div class="brand-sub">주 / 월 단위 진행률 요약</div>
+    </div>
+    <div class="actions">
+      <button id="btnExportReport" class="btn">data download</button>
+      <label class="btn btn-secondary" for="fileImportReport">data upload</label>
+      <input id="fileImportReport" type="file" accept="application/json" hidden />
+    </div>
+  </header>
+
+
+  <main class="layout">
+    <h2>주 / 월 요약</h2>
+    <!-- 월별 요약 -->
+    <section class="month-summary" id="monthSummary"></section>
+
+    <!-- 월 × 주 히트맵 -->
+    <section class="progress-matrix" id="progressMatrix"></section>
+
+    <section class="goal-section">
+  <h2>목표</h2>
+
+  <div class="goal-grid">
+    <div class="goal-card">
+      <h3>올해 목표</h3>
+      <textarea id="goalYear" placeholder="올 해 이루고 싶은 목표를 적어보세요"></textarea>
+    </div>
+
+    <div class="goal-card">
+      <h3>이번 달 목표</h3>
+      <textarea id="goalMonth" placeholder="이번 달의 핵심 목표"></textarea>
+    </div>
+
+    <div class="goal-card">
+      <h3>이번 주 목표</h3>
+      <textarea id="goalWeek" placeholder="이번 주에 집중할 일"></textarea>
+    </div>
+  </div>
+</section>
+  </main>
+  </section>
+  </div>
 
   <!-- Modal -->
   <div id="modalBackdrop" class="backdrop hidden" aria-hidden="true">
@@ -108,6 +160,19 @@
     <div class="modal-footer">
       <button id="confirmNo" class="btn btn-secondary">취소</button>
       <button id="confirmYes" class="btn btn-danger">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- report detail modal -->
+<div id="reportDetailBackdrop" class="backdrop hidden">
+  <div class="modal report-modal">
+    <h3 id="reportDetailTitle"></h3>
+
+    <div id="reportDetailContent" class="report-content"></div>
+
+    <div class="modal-actions">
+      <button id="btnCloseReport">닫기</button>
     </div>
   </div>
 </div>
