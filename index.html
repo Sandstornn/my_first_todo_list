@@ -72,23 +72,33 @@
     <!-- 월 × 주 히트맵 -->
     <section class="progress-matrix" id="progressMatrix"></section>
 
-    <section class="goal-section">
-  <h2>목표</h2>
+    <!-- 🎯 목표 영역 -->
+  <section class="goal-section">
+    <h2>목표</h2>
 
-  <div class="goal-grid">
+    <div class="goal-grid">
     <div class="goal-card">
-      <h3>올해 목표</h3>
-      <textarea id="goalYear" placeholder="올 해 이루고 싶은 목표를 적어보세요"></textarea>
+      <div class="goal-header">
+        <button class="goal-open icon-btn" data-type="year">＋</button>
+        <h3>올해 목표</h3>
+      </div>
+      <div id="goalYearPreview" class="goal-preview"></div>
     </div>
 
     <div class="goal-card">
-      <h3>이번 달 목표</h3>
-      <textarea id="goalMonth" placeholder="이번 달의 핵심 목표"></textarea>
+      <div class="goal-header">
+        <button class="goal-open icon-btn" data-type="month">＋</button>
+        <h3>이번 달 목표</h3>
+      </div>
+      <div id="goalMonthPreview" class="goal-preview"></div>
     </div>
 
     <div class="goal-card">
-      <h3>이번 주 목표</h3>
-      <textarea id="goalWeek" placeholder="이번 주에 집중할 일"></textarea>
+      <div class="goal-header">
+        <button class="goal-open icon-btn" data-type="week">＋</button>
+        <h3>이번 주 목표</h3>
+      </div>
+      <div id="goalWeekPreview" class="goal-preview"></div>
     </div>
   </div>
 </section>

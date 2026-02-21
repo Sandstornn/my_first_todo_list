@@ -2,9 +2,38 @@ let selectedDate = null;
 let confirmResolve = null;
 let openedTodoIndex = null;
 
+/* ---------- 현재 modal 모드(어디에 저장할지) ---------- */
+let currentMode = "day"; 
+// "day" | "year" | "month" | "week"
+
 /* ---------- util ---------- */
 function getStore() {
-  return JSON.parse(localStorage.getItem("todos") || "{}");
+  const raw = localStorage.getItem("todos");
+  if (!raw) {
+    return {
+      todos: {},
+      goals: { year: {}, month: {}, week: {} }
+    };
+  }
+
+  const parsed = JSON.parse(raw);
+
+  // 🔥 레거시 구조 자동 변환
+  const hasLegacy = Object.keys(parsed).some(k => k.includes("-"));
+  if (hasLegacy && !parsed.todos) {
+    return {
+      todos: parsed,
+      goals: { year: {}, month: {}, week: {} }
+    };
+  }
+
+  parsed.todos = parsed.todos || {};
+  parsed.goals = parsed.goals || { year: {}, month: {}, week: {} };
+  parsed.goals.year = parsed.goals.year || {};
+  parsed.goals.month = parsed.goals.month || {};
+  parsed.goals.week = parsed.goals.week || {};
+
+  return parsed;
 }
 function setStore(data) {
   localStorage.setItem("todos", JSON.stringify(data));
@@ -128,9 +157,9 @@ function renderReport() {
     let total = 0;
     let done = 0;
 
-    Object.keys(store).forEach(date => {
+    Object.keys(store.todos).forEach(date => {
       if (date.startsWith(m.key)) {
-        store[date].forEach(t => {
+        store.todos[date].forEach(t => {
           total++;
           if (t.done) done++;
         });
@@ -179,13 +208,13 @@ function renderReport() {
     months.forEach(m => {
       let weekTodos = [];
 
-      Object.keys(store).forEach(date => {
+      Object.keys(store.todos).forEach(date => {
         if (!date.startsWith(m.key)) return;
 
         const d = new Date(date);
         const weekIndex = Math.ceil(d.getDate() / 7);
         if (weekIndex === week) {
-          weekTodos.push(...store[date]);
+          weekTodos.push(...store.todos[date]);
         }
       });
 
@@ -313,7 +342,21 @@ function openModal(dateStr) {
   selectedDate = dateStr;
   openedTodoIndex = null;
 
+  if (currentMode === "day") {
   document.getElementById("modalTitle").textContent = dateStr;
+}
+
+if (currentMode === "year") {
+  document.getElementById("modalTitle").textContent = dateStr + "년 목표";
+}
+
+if (currentMode === "month") {
+  document.getElementById("modalTitle").textContent = dateStr + "월 목표";
+}
+
+if (currentMode === "week") {
+  document.getElementById("modalTitle").textContent = dateStr + "주간 목표";
+}
   document.getElementById("modalBackdrop").classList.remove("hidden");
 
   loadTodos(dateStr);
@@ -328,6 +371,8 @@ function closeModal() {
   document.getElementById("modalBackdrop").classList.add("hidden");
   selectedDate = null;
   openedTodoIndex = null;
+
+  renderGoalPreview(); // 모달 닫을 때도 preview 갱신
 }
 
 /* ---------- todos ---------- */
@@ -336,7 +381,17 @@ function loadTodos(date) {
   list.innerHTML = "";
 
   const store = getStore();
-  const todos = store[date] || [];
+  let todos = [];
+
+  if (currentMode === "day") {
+    todos = store.todos[date] || [];
+  } else if (currentMode === "year") {
+    todos = store.goals.year[date] || [];
+  } else if (currentMode === "month") {
+    todos = store.goals.month[date] || [];
+  } else if (currentMode === "week") {
+    todos = store.goals.week[date] || [];
+  }
 
   todos.forEach((todo, idx) => {
     /* ---------- 상위 todo ---------- */
@@ -438,7 +493,17 @@ function loadTodos(date) {
 
 function saveTodos(date, todos) {
   const store = getStore();
-  store[date] = todos;
+
+  if (currentMode === "day") {
+    store.todos[date] = todos;
+  } else if (currentMode === "year") {
+    store.goals.year[date] = todos;
+  } else if (currentMode === "month") {
+    store.goals.month[date] = todos;
+  } else if (currentMode === "week") {
+    store.goals.week[date] = todos;
+  }
+
   setStore(store);
 }
 
@@ -607,25 +672,55 @@ document.addEventListener("keydown", e => {
   document.getElementById("btnClose").onclick = closeModal;
 
   document.getElementById("btnAdd").onclick = () => {
-    const input = document.getElementById("todoInput");
-    if (!input.value || !selectedDate) return;
+  const input = document.getElementById("todoInput");
+  if (!input.value || !selectedDate) return;
 
-    const store = getStore();
-    const todos = store[selectedDate] || [];
+  const store = getStore();
+  let todos = [];
 
-    todos.push({ text: input.value, done: false, subs: [] });
-    saveTodos(selectedDate, todos);
+  if (currentMode === "day") {
+    todos = store.todos[selectedDate] || [];
+  } 
+  else if (currentMode === "year") {
+    todos = store.goals.year[selectedDate] || [];
+  } 
+  else if (currentMode === "month") {
+    todos = store.goals.month[selectedDate] || [];
+  } 
+  else if (currentMode === "week") {
+    todos = store.goals.week[selectedDate] || [];
+  }
 
-    input.value = "";
-    loadTodos(selectedDate);
-    input.focus();
-  };
+  todos.push({ text: input.value, done: false, subs: [] });
+
+  saveTodos(selectedDate, todos);
+
+  input.value = "";
+  loadTodos(selectedDate);
+  renderGoalPreview();  // ✅ 추가
+  input.focus();
+};
 
   document.getElementById("btnClearDone").onclick = () => {
     if (!selectedDate) return;
 
     const store = getStore();
-    store[selectedDate] = (store[selectedDate] || []).filter(t => !t.done);
+    if (currentMode === "day") {
+      store.todos[selectedDate] =
+        (store.todos[selectedDate] || []).filter(t => !t.done);
+      }
+    else  if (currentMode === "year") {
+  store.goals.year[selectedDate] =
+    (store.goals.year[selectedDate] || []).filter(t => !t.done);
+}
+else if (currentMode === "month") {
+  store.goals.month[selectedDate] =
+    (store.goals.month[selectedDate] || []).filter(t => !t.done);
+}
+else if (currentMode === "week") {
+  store.goals.week[selectedDate] =
+    (store.goals.week[selectedDate] || []).filter(t => !t.done);
+}
     setStore(store);
     loadTodos(selectedDate);
   };
@@ -637,7 +732,7 @@ document.addEventListener("keydown", e => {
     if (!ok) return;
 
     const store = getStore();
-    delete store[selectedDate];
+    delete store.todos[selectedDate];
     setStore(store);
 
     closeModal();
@@ -688,5 +783,79 @@ document.getElementById("fileImportReport")
   });
 
 
+  // =========================
+// 🎯 Goal + 버튼 → 기존 modal 재사용
+// =========================
+
+document.querySelectorAll(".goal-open").forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    const type = btn.dataset.type; // year / month / week
+    currentMode = type;
+
+    const today = new Date();
+
+    if (type === "year") {
+      selectedDate = String(today.getFullYear());
+    }
+
+    if (type === "month") {
+      selectedDate =
+        today.getFullYear() +
+        "-" +
+        String(today.getMonth() + 1).padStart(2, "0");
+    }
+
+    if (type === "week") {
+      const week = Math.ceil(today.getDate() / 7);
+      selectedDate =
+        today.getFullYear() +
+        "-" +
+        String(today.getMonth() + 1).padStart(2, "0") +
+        "-W" +
+        week;
+    }
+
+    openModal(selectedDate);
+  });
+});
 };
 
+
+// 목표에 대한 미리보기 렌더링 함수 (report 페이지)
+function renderGoalPreview() {
+  const store = getStore();
+
+  // 연간 목표
+  const yearPreview = document.getElementById("goalYearPreview");
+  yearPreview.innerHTML = "";
+  Object.values(store.goals.year).forEach(todos => {
+    todos.forEach(t => {
+      const div = document.createElement("div");
+      div.textContent = t.text;
+      yearPreview.appendChild(div);
+    });
+  });
+
+  // 월간 목표
+  const monthPreview = document.getElementById("goalMonthPreview");
+  monthPreview.innerHTML = "";
+  Object.values(store.goals.month).forEach(todos => {
+    todos.forEach(t => {
+      const div = document.createElement("div");
+      div.textContent = t.text;
+      monthPreview.appendChild(div);
+    });
+  });
+
+  // 주간 목표
+  const weekPreview = document.getElementById("goalWeekPreview");
+  weekPreview.innerHTML = "";
+  Object.values(store.goals.week).forEach(todos => {
+    todos.forEach(t => {
+      const div = document.createElement("div");
+      div.textContent = t.text;
+      weekPreview.appendChild(div);
+    });
+  });
+}
