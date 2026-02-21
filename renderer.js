@@ -52,7 +52,7 @@ function openReportDetail(title, dateList) {
   content.innerHTML = "";
 
   dateList.forEach(date => {
-    if (!store[date]) return;
+    if (!store.todos[date]) return;
 
     const dayBlock = document.createElement("div");
     dayBlock.className = "report-day";
@@ -61,7 +61,7 @@ function openReportDetail(title, dateList) {
       <div class="report-day-title">${formatDateKorean(date)}</div>
     `;
 
-    store[date].forEach(t => {
+    store.todos[date].forEach(t => {
       const line = document.createElement("div");
       line.className = `report-item ${t.done ? "done" : "todo"}`;
       line.textContent = `${t.done ? "✔" : "✖"} ${t.text}`;
