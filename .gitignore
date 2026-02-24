@@ -10,3 +10,6 @@ todo_list_exe_folders/
 
 # misc
 .DS_Store
+
+# environment variables
+.env
