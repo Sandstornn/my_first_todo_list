@@ -43,13 +43,32 @@ function setStore(data) {
 /* ---------- report detail modal ---------- */
 
 /* ---------- function rendering report detail modal ---------- */
-function openReportDetail(title, dateList) {
+async function openReportDetail(title, dateList) {
   const store = getStore();
   const content = document.getElementById("reportDetailContent");
   const backdrop = document.getElementById("reportDetailBackdrop");
 
+  // 제목 설정
   document.getElementById("reportDetailTitle").textContent = title;
+  
+  // 내용 초기화
   content.innerHTML = "";
+
+  // 내용 제일 위 ai Section
+  // 3. 🔥 AI 요약 박스 동적 생성 및 삽입
+  const aiSection = document.createElement("div");
+  aiSection.className = "ai-summary-container";
+  aiSection.innerHTML = `
+    <div class="ai-header">🤖 Gemini AI 분석</div>
+    <div id="aiSummaryText" class="ai-summary-text">활동 데이터를 분석하고 있습니다...</div>
+  `;
+  // 내용(content)의 맨 위에 AI 섹션을 먼저 추가
+  content.appendChild(aiSection);
+
+  // AI에게 전달할 텍스트 데이터를 모을 배열
+  let allActivities = [];
+
+
 
   dateList.forEach(date => {
     if (!store.todos[date]) return;
@@ -66,10 +85,49 @@ function openReportDetail(title, dateList) {
       line.className = `report-item ${t.done ? "done" : "todo"}`;
       line.textContent = `${t.done ? "✔" : "✖"} ${t.text}`;
       dayBlock.appendChild(line);
+
+      // AI 분석용 텍스트 추가 (날짜 - 할 일 - 완료여부)
+      allActivities.push(`[${date}] ${t.text} (${t.done ? "완료" : "미완료"})`);
     });
 
     content.appendChild(dayBlock);
   });
+
+  // 5. AI 요약 호출 (정석 루트 적용 시)
+const aiTextEl = document.getElementById("aiSummaryText");
+
+if (allActivities.length > 0) {
+    try {
+      // 로딩 중임을 알리는 텍스트 유지
+      aiTextEl.textContent = "🤖 Gemini가 이번 주 성과를 분석 중이에요...";
+      
+      // 메인 프로세스로부터 응답 대기
+      const summary = await window.electronAPI.getAISummary(allActivities);
+      
+      if (summary) {
+        aiTextEl.textContent = summary;
+      } else {
+        aiTextEl.textContent = "AI로부터 응답을 받지 못했습니다.";
+      }
+    } catch (err) {
+      //console.error("Renderer IPC Error:", err);
+      //aiTextEl.textContent = "AI 분석 중 통신 오류가 발생했습니다.";
+      // 1. 콘솔을 못 보니, 에러 내용을 상세히 조합해서 화면에 직접 띄웁니다.
+      const errorMsg = err.message || "알 수 없는 에러";
+      const errorStack = err.stack ? err.stack.split('\n')[0] : ""; // 첫 줄만 추출
+      
+      aiTextEl.textContent = `⚠️ 통신 실패: ${errorMsg} (${errorStack})`;
+      aiTextEl.style.color = "#ef4444"; // 에러니까 빨간색으로 강조
+      
+      // 2. 만약 window.electronAPI 자체가 문제라면 여기서 걸러집니다.
+      if (!window.electronAPI) {
+        aiTextEl.textContent = "⚠️ 오류: preload.js가 제대로 로드되지 않았습니다.";
+      }
+    }
+  } else {
+    aiTextEl.textContent = "분석할 활동 데이터가 없습니다.";
+  }
+
 
   backdrop.classList.remove("hidden");
   // 닫기 버튼
@@ -372,6 +430,8 @@ function closeModal() {
   selectedDate = null;
   openedTodoIndex = null;
 
+  currentMode = "day";
+
   renderGoalPreview(); // 모달 닫을 때도 preview 갱신
 }
 
@@ -517,6 +577,7 @@ window.onload = () => {
       height: "auto",
       headerToolbar: false,
       dateClick(info) {
+        currentMode = "day";
         openModal(info.dateStr);
       }
     }
@@ -831,9 +892,11 @@ function renderGoalPreview() {
   yearPreview.innerHTML = "";
   Object.values(store.goals.year).forEach(todos => {
     todos.forEach(t => {
+      if(!t.done&&t.text){
       const div = document.createElement("div");
       div.textContent = t.text;
       yearPreview.appendChild(div);
+      }
     });
   });
 
@@ -842,9 +905,11 @@ function renderGoalPreview() {
   monthPreview.innerHTML = "";
   Object.values(store.goals.month).forEach(todos => {
     todos.forEach(t => {
+        if(!t.done&&t.text){
       const div = document.createElement("div");
       div.textContent = t.text;
       monthPreview.appendChild(div);
+        }
     });
   });
 
@@ -853,9 +918,11 @@ function renderGoalPreview() {
   weekPreview.innerHTML = "";
   Object.values(store.goals.week).forEach(todos => {
     todos.forEach(t => {
+        if(!t.done&&t.text){
       const div = document.createElement("div");
       div.textContent = t.text;
       weekPreview.appendChild(div);
+        }
     });
   });
 }
