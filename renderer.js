@@ -93,6 +93,9 @@ async function openReportDetail(title, dateList) {
     content.appendChild(dayBlock);
   });
 
+  // 창 먼저 띄우기
+  backdrop.classList.remove("hidden");
+
   // 5. AI 요약 호출 (정석 루트 적용 시)
 const aiTextEl = document.getElementById("aiSummaryText");
 
@@ -129,7 +132,7 @@ if (allActivities.length > 0) {
   }
 
 
-  backdrop.classList.remove("hidden");
+  
   // 닫기 버튼
   document.getElementById("btnCloseReport").onclick = () => {
   document.getElementById("reportDetailBackdrop").classList.add("hidden");
