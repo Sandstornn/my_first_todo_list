@@ -792,9 +792,46 @@ body{
   margin: 0;
 }
 
+/* 목표 카드 내 텍스트 영역 스타일 */
 .goal-preview {
-  margin-top: 12px;
-  font-size: 14px;
-  color: #4b5563;
-  min-height: 24px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* 항목 간의 간격 넓힘 */
+}
+
+/* 개별 목표 문구 스타일 */
+.goal-preview div {
+  font-size: 16px; /* 글자 크기 시원하게 키움 */
+  font-weight: 500;
+  line-height: 1.5;
+  color: #374151; /* 진한 회색으로 가독성 확보 */
+  letter-spacing: -0.3px;
+  
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* 목표 앞에 붙는 포인트 디자인 (색연필 컨셉 유지) */
+.goal-preview div::before {
+  content: "•"; /* 또는 "✔️" */
+  color: #818cf8; /* 포인트 컬러 */
+  font-weight: 900;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* 목표가 없을 때 안내 문구 */
+.goal-preview:empty::after {
+  content: "아직 등록된 목표가 없어요";
+  font-size: 12px;
+  color: #9ca3af;
+  opacity: 0.8;
+  padding-top: 5px;
+}
+
+/* 카드 내부 전체적인 여백 살짝 조정 */
+.goal-card {
+  padding: 12px 12px 12px 24px;
 }
