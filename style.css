@@ -835,3 +835,24 @@ body{
 .goal-card {
   padding: 12px 12px 12px 24px;
 }
+
+#aiSummaryText {
+  /* 1. 폰트 설정: 가독성 좋은 프리텐다드나 고딕 계열 추천 */
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  
+  /* 2. 글자 크기와 무게: 너무 작으면 힘이 없으니 1.1rem 정도로 키우고 무게감을 줍니다. */
+  font-size: 1.1rem;
+  font-weight: 400; /* 기본 두께 */
+  color: #e5e7eb; /* 너무 생흰색보다는 살짝 밝은 회색이 고급스럽습니다. */
+  
+  /* 3. 줄 간격과 자간: 비문학 톤에 맞춰 여유 있게 배치 */
+  line-height: 1.8;   /* 줄 사이 간격 */
+  letter-spacing: -0.02em; /* 자간을 살짝 좁히면 글자가 더 쫀득하게 보입니다. */
+  
+  /* 4. 영역 설정 */
+  white-space: pre-wrap;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03); /* 아주 은은한 배경색 */
+  border-radius: 12px;
+  border-left: 3px solid #8b5cf6; /* 왼쪽에 보라색 포인트 바 하나만 줘도 '깔'이 삽니다. */
+}

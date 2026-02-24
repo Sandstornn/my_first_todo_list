@@ -108,7 +108,9 @@ if (allActivities.length > 0) {
       const summary = await window.electronAPI.getAISummary(allActivities);
       
       if (summary) {
-        aiTextEl.textContent = summary;
+        const formatted = summary;
+        
+        aiTextEl.textContent = formatted;
       } else {
         aiTextEl.textContent = "AI로부터 응답을 받지 못했습니다.";
       }
