@@ -179,9 +179,13 @@ body{
 }
 
 #ymBackdrop .modal-header {
-  margin-top: 12px;
+  margin-top: 0;         /* ❌ 기존 12px 제거 */
   margin-bottom: 0;
-  padding-bottom:0;
+  padding: 14px 16px 10px 16px;
+
+  display: flex;
+  align-items: center; /* 제목과 X버튼의 세로 중앙 정렬 */
+  justify-content: space-between;
 }
 
 .modal-title{
@@ -836,23 +840,68 @@ body{
   padding: 12px 12px 12px 24px;
 }
 
-#aiSummaryText {
-  /* 1. 폰트 설정: 가독성 좋은 프리텐다드나 고딕 계열 추천 */
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-  
-  /* 2. 글자 크기와 무게: 너무 작으면 힘이 없으니 1.1rem 정도로 키우고 무게감을 줍니다. */
-  font-size: 1.1rem;
-  font-weight: 400; /* 기본 두께 */
-  color: #e5e7eb; /* 너무 생흰색보다는 살짝 밝은 회색이 고급스럽습니다. */
-  
-  /* 3. 줄 간격과 자간: 비문학 톤에 맞춰 여유 있게 배치 */
-  line-height: 1.8;   /* 줄 사이 간격 */
-  letter-spacing: -0.02em; /* 자간을 살짝 좁히면 글자가 더 쫀득하게 보입니다. */
-  
-  /* 4. 영역 설정 */
-  white-space: pre-wrap;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.03); /* 아주 은은한 배경색 */
-  border-radius: 12px;
-  border-left: 3px solid #8b5cf6; /* 왼쪽에 보라색 포인트 바 하나만 줘도 '깔'이 삽니다. */
+
+/* 1. AI 요약 박스 전체 컨테이너 */
+.ai-summary-container {
+    background-color: #f1f5f9; /* 연한 회색 배경 */
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-left: 6px solid #6366f1; /* 인디고 포인트 바 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* AI 헤더 (로고 부분) */
+.ai-header {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #4f46e5;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 2. 실제 AI가 작성한 텍스트 스타일 */
+.ai-summary-text {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: #1e293b; /* 묵직한 진회색 */
+    white-space: pre-wrap; /* ✅ 엔터(줄바꿈)가 화면에 보이게 함 */
+    letter-spacing: -0.01em;
+}
+
+/* 3. 할 일 목록 리포트 스타일 (체크/엑스) */
+.report-item {
+    padding: 8px 12px;
+    margin: 4px 0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 완료된 항목 (✔) */
+.report-item.done {
+    background-color: #ecfdf5;
+    color: #059669;
+}
+
+/* 미완료 항목 (✖) */
+.report-item.todo {
+    background-color: #fff1f2;
+    color: #e11d48;
+}
+
+/* 날짜 타이틀 */
+.report-day-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 5px;
 }
