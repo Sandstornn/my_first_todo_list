@@ -47,99 +47,103 @@ async function openReportDetail(title, dateList) {
   const store = getStore();
   const content = document.getElementById("reportDetailContent");
   const backdrop = document.getElementById("reportDetailBackdrop");
+  const closeX = document.getElementById("btnReportCloseX");
 
-  // 제목 설정
+  // 1. 제목 및 내용 초기화
   document.getElementById("reportDetailTitle").textContent = title;
-  
-  // 내용 초기화
   content.innerHTML = "";
 
-  // 내용 제일 위 ai Section
-  // 3. 🔥 AI 요약 박스 동적 생성 및 삽입
+  // 2. 닫기 버튼(X) 이벤트 연결
+  if (closeX) {
+    closeX.onclick = () => backdrop.classList.add("hidden");
+  }
+
+  // 3. AI 섹션 동적 생성
   const aiSection = document.createElement("div");
   aiSection.className = "ai-summary-container";
   aiSection.innerHTML = `
     <div class="ai-header">🤖 Gemini AI 분석</div>
-    <div id="aiSummaryText" class="ai-summary-text">활동 데이터를 분석하고 있습니다...</div>
+    <div id="aiSummaryText" class="ai-summary-text">목표와 세부 실행 내역을 대조 분석 중입니다...</div>
   `;
-  // 내용(content)의 맨 위에 AI 섹션을 먼저 추가
   content.appendChild(aiSection);
 
-  // AI에게 전달할 텍스트 데이터를 모을 배열
+  // AI에게 전달할 데이터 수집
   let allActivities = [];
 
+  // renderer.js 내 openReportDetail 함수 중 데이터 수집 부분
+const collectGoals = (goalObj, typeLabel) => {
+  Object.keys(goalObj).forEach(key => {
+    if (title.includes(key.split('-')[0])) { 
+      goalObj[key].forEach(g => {
+        // '목표'임을 강조하고 상태를 명확히 전달
+        allActivities.push(`[필독-상위 ${typeLabel}] 명칭: "${g.text}", 상태: ${g.done ? "달성함" : "아직 미달성(진행중)"}`);
+      });
+    }
+  });
+};
 
+  collectGoals(store.goals.year, "연간 목표");
+  collectGoals(store.goals.month, "월간 목표");
+  collectGoals(store.goals.week, "주간 목표");
 
+  // --- B. 일일 활동 및 세부 항목(subs) 수집 ---
   dateList.forEach(date => {
     if (!store.todos[date]) return;
 
     const dayBlock = document.createElement("div");
     dayBlock.className = "report-day";
+    dayBlock.innerHTML = `<div class="report-day-title">${formatDateKorean(date)}</div>`;
 
-    dayBlock.innerHTML = `
-      <div class="report-day-title">${formatDateKorean(date)}</div>
-    `;
-
+    // renderer.js의 openReportDetail 함수 내부 수정
     store.todos[date].forEach(t => {
+      // 1. 메인 할 일 정보 생성
+      let activityInfo = `[${date}] 할 일: ${t.text} (${t.done ? "완료" : "미완료"})`;
+
+      // 2. 해당 할 일에 달린 세부 항목(대댓글)들을 바로 아래에 붙여줌
+      if (t.subs && t.subs.length > 0) {
+        const subDetails = t.subs
+          .filter(s => s.text && s.text.trim() !== "") // 내용이 있는 것만 포함
+          .map(s => `   └ [대댓글/세부사항]: ${s.text} (${s.done ? "완료" : "미완료"})`)
+          .join("\n");
+        
+        activityInfo += `\n${subDetails}`;
+      }
+
+      // AI 전송 배열에 추가
+      allActivities.push(activityInfo);
+
+      // (참고) 화면에 보이는 리스트 렌더링 로직은 기존대로 유지
       const line = document.createElement("div");
       line.className = `report-item ${t.done ? "done" : "todo"}`;
       line.textContent = `${t.done ? "✔" : "✖"} ${t.text}`;
       dayBlock.appendChild(line);
-
-      // AI 분석용 텍스트 추가 (날짜 - 할 일 - 완료여부)
-      allActivities.push(`[${date}] ${t.text} (${t.done ? "완료" : "미완료"})`);
     });
-
     content.appendChild(dayBlock);
   });
 
-  // 창 먼저 띄우기
   backdrop.classList.remove("hidden");
 
-  // 5. AI 요약 호출 (정석 루트 적용 시)
-const aiTextEl = document.getElementById("aiSummaryText");
-
-if (allActivities.length > 0) {
+  // 4. AI 요약 호출
+  const aiTextEl = document.getElementById("aiSummaryText");
+  if (allActivities.length > 0) {
     try {
-      // 로딩 중임을 알리는 텍스트 유지
-      aiTextEl.textContent = "🤖 Gemini가 이번 주 성과를 분석 중이에요...";
-      
-      // 메인 프로세스로부터 응답 대기
+      aiTextEl.textContent = "🤖 목표 대비 실행력을 분석하고 있습니다...";
       const summary = await window.electronAPI.getAISummary(allActivities);
       
       if (summary) {
-        const formatted = summary;
-        
-        aiTextEl.textContent = formatted;
-      } else {
-        aiTextEl.textContent = "AI로부터 응답을 받지 못했습니다.";
+        // 줄바꿈 가공 후 화면 표시
+        aiTextEl.innerText = summary
+        .replace(/[#*]/g, '')
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
       }
     } catch (err) {
-      //console.error("Renderer IPC Error:", err);
-      //aiTextEl.textContent = "AI 분석 중 통신 오류가 발생했습니다.";
-      // 1. 콘솔을 못 보니, 에러 내용을 상세히 조합해서 화면에 직접 띄웁니다.
-      const errorMsg = err.message || "알 수 없는 에러";
-      const errorStack = err.stack ? err.stack.split('\n')[0] : ""; // 첫 줄만 추출
-      
-      aiTextEl.textContent = `⚠️ 통신 실패: ${errorMsg} (${errorStack})`;
-      aiTextEl.style.color = "#ef4444"; // 에러니까 빨간색으로 강조
-      
-      // 2. 만약 window.electronAPI 자체가 문제라면 여기서 걸러집니다.
-      if (!window.electronAPI) {
-        aiTextEl.textContent = "⚠️ 오류: preload.js가 제대로 로드되지 않았습니다.";
-      }
+      aiTextEl.textContent = `⚠️ 통신 실패: ${err.message}`;
+      aiTextEl.style.color = "#ef4444";
     }
-  } else {
-    aiTextEl.textContent = "분석할 활동 데이터가 없습니다.";
   }
-
-
-  
-  // 닫기 버튼
-  document.getElementById("btnCloseReport").onclick = () => {
-  document.getElementById("reportDetailBackdrop").classList.add("hidden");
-};
 }
+
 /* ---------- 주 클릭시 날짜 범위 ---------- */
 function getWeekRange(year, month, weekIndex) {
   const startDay = (weekIndex - 1) * 7 + 1;
