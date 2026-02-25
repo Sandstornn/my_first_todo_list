@@ -177,14 +177,18 @@
 <!-- report detail modal -->
 <div id="reportDetailBackdrop" class="backdrop hidden">
   <div class="modal report-modal">
-    <h3 id="reportDetailTitle"></h3>
-
-    <div id="reportDetailContent" class="report-content"></div>
-
-    <div class="modal-actions">
-      <button id="btnCloseReport">닫기</button>
+    <div class="modal-header">
+      <div>
+        <div id="reportDetailTitle" class="modal-title">활동 리포트</div>
+        <div class="modal-sub">AI 분석 결과 및 상세 내역 · ESC로 닫기</div>
+      </div>
+      <button id="btnReportCloseX" class="icon-btn" aria-label="닫기">✕</button>
     </div>
-  </div>
+
+    <div id="reportDetailContent" class="modal-body report-content">
+      </div>
+
+    </div>
 </div>
 
   <script src="renderer.js"></script>
