@@ -462,6 +462,13 @@ function loadTodos(date) {
     todos = store.goals.week[date] || [];
   }
 
+
+  // [추가] 완료된 항목(done: true)은 뒤로(1), 미완료는 앞으로(-1) 정렬
+  todos.sort((a, b) => {
+    if (a.done === b.done) return 0;
+    return a.done ? 1 : -1;
+  });
+
   todos.forEach((todo, idx) => {
     /* ---------- 상위 todo ---------- */
     const item = document.createElement("div");
@@ -511,7 +518,10 @@ function loadTodos(date) {
       const subWrap = document.createElement("div");
       subWrap.className = "todo-sub-wrap";
 
-      (todo.subs || []).forEach((sub, sIdx) => {
+      (todo.subs || []).sort((a, b) => {
+        if (a.done === b.done) return 0;
+        return a.done ? 1 : -1;
+      }).forEach((sub, sIdx) => {
         const subItem = document.createElement("div");
         subItem.className = "todo-sub-item";
 

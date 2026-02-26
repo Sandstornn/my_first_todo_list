@@ -46,3 +46,4 @@ npm run build
 - 캘린더 하단에 추가 페이지를 배치하여 스크롤 방식의 UI 구성
 - 1년 단위의 월별 / 주별 진행률을 시각적으로 제공
 - 특정 주를 클릭하면 해당 주의 세부 To-Do checklist 및 요약 정보 표시
+- 각 항목들 위치 옮기기(html5 draggable or sortable.js 라이브러리 사용)
