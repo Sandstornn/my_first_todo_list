@@ -58,6 +58,8 @@ async function openReportDetail(title, dateList) {
     closeX.onclick = () => backdrop.classList.add("hidden");
   }
 
+  
+
   // 3. AI 섹션 동적 생성
   const aiSection = document.createElement("div");
   aiSection.className = "ai-summary-container";
@@ -123,8 +125,26 @@ const collectGoals = (goalObj, typeLabel) => {
 
   backdrop.classList.remove("hidden");
 
+  // 2. 캐시 확인 로직 도입
+  // store.aiCache가 없으면 초기화
+  store.aiCache = store.aiCache || {};
+  
+  const currentDataStr = JSON.stringify(allActivities);
+  const cachedEntry = store.aiCache[title]; // 리포트 제목을 키로 사용
+
+  
   // 4. AI 요약 호출
   const aiTextEl = document.getElementById("aiSummaryText");
+
+  // 해당 리포트의 기존 데이터와 현재 데이터가 완전히 일치하는지 확인
+  if (cachedEntry && cachedEntry.data === currentDataStr) {
+    console.log(`[AI Cache Hit] "${title}" 리포트의 변경사항이 없어 캐시된 내용을 표시합니다.`);
+    
+    aiTextEl.innerText = cachedEntry.summary;
+    // 통신 없이 여기서 종료
+    return;
+  }
+
   if (allActivities.length > 0) {
     try {
       aiTextEl.textContent = "🤖 목표 대비 실행력을 분석하고 있습니다...";
@@ -136,6 +156,13 @@ const collectGoals = (goalObj, typeLabel) => {
         .replace(/[#*]/g, '')
         .replace(/\n{3,}/g, "\n\n")
         .trim();
+
+        // 새로운 결과를 캐시에 저장하고 로컬 스토리지에 기록합니다.
+        store.aiCache[title] = {
+          data: currentDataStr,  // 현재 분석한 원본 데이터 문자열
+          summary: cleanSummary // AI의 분석 결과
+        };
+        setStore(store); // 변경된 store를 localStorage에 저장
       }
     } catch (err) {
       aiTextEl.textContent = `⚠️ 통신 실패: ${err.message}`;
