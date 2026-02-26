@@ -12,26 +12,30 @@ function getStore() {
   if (!raw) {
     return {
       todos: {},
-      goals: { year: {}, month: {}, week: {} }
+      goals: { year: {}, month: {}, week: {} },
+      routines: [],
+      lastRoutineDate: null,
+      aiCache: {}
     };
   }
 
-  const parsed = JSON.parse(raw);
+  let parsed = JSON.parse(raw);
 
-  // 🔥 레거시 구조 자동 변환
+  // 🔥 레거시 구조 대응 (데이터 날림 방지)
   const hasLegacy = Object.keys(parsed).some(k => k.includes("-"));
   if (hasLegacy && !parsed.todos) {
-    return {
-      todos: parsed,
-      goals: { year: {}, month: {}, week: {} }
-    };
+    parsed = { todos: parsed };
   }
 
+  // 필수 구조 보강
   parsed.todos = parsed.todos || {};
   parsed.goals = parsed.goals || { year: {}, month: {}, week: {} };
   parsed.goals.year = parsed.goals.year || {};
   parsed.goals.month = parsed.goals.month || {};
   parsed.goals.week = parsed.goals.week || {};
+  parsed.routines = parsed.routines || [];
+  parsed.lastRoutineDate = parsed.lastRoutineDate || null;
+  parsed.aiCache = parsed.aiCache || {};
 
   return parsed;
 }
@@ -40,6 +44,39 @@ function setStore(data) {
 }
 
 /////////////////////////////////////////////////////////////////
+/* routine function */
+/* 루틴을 오늘 체크리스트에 추가해주는 함수 수정 */
+function checkDailyRoutines() {
+  const store = getStore();
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (store.lastRoutineDate === today) return;
+  if (!store.routines || store.routines.length === 0) return;
+
+  store.todos[today] = store.todos[today] || [];
+
+  store.routines.forEach(routineObj => {
+    // 중복 체크
+    const exists = store.todos[today].some(t => t.text === routineObj.text);
+    
+    if (!exists) {
+      // 세부 항목(subs)이 있다면, 그것들도 완료 상태를 false로 초기화하여 복사
+      const newSubs = (routineObj.subs || []).map(s => ({
+        text: s.text,
+        done: false // 매일 새로 시작하므로 false
+      }));
+
+      store.todos[today].push({
+        text: routineObj.text,
+        done: false,
+        subs: newSubs // 복사된 세부 항목 삽입
+      });
+    }
+  });
+
+  store.lastRoutineDate = today;
+  setStore(store);
+}
 /* ---------- report detail modal ---------- */
 
 /* ---------- function rendering report detail modal ---------- */
@@ -152,10 +189,12 @@ const collectGoals = (goalObj, typeLabel) => {
       
       if (summary) {
         // 줄바꿈 가공 후 화면 표시
-        aiTextEl.innerText = summary
-        .replace(/[#*]/g, '')
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
+        const cleanSummary = summary
+          .replace(/[#*]/g, '')
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+
+        aiTextEl.innerText = cleanSummary;
 
         // 새로운 결과를 캐시에 저장하고 로컬 스토리지에 기록합니다.
         store.aiCache[title] = {
@@ -436,19 +475,15 @@ function openModal(dateStr) {
   selectedDate = dateStr;
   openedTodoIndex = null;
 
-  if (currentMode === "day") {
+if (currentMode === "routine") {
+  document.getElementById("modalTitle").textContent = "Routine";
+}else if (currentMode === "day") {
   document.getElementById("modalTitle").textContent = dateStr;
-}
-
-if (currentMode === "year") {
+}else if (currentMode === "year") {
   document.getElementById("modalTitle").textContent = dateStr + "년 목표";
-}
-
-if (currentMode === "month") {
+}else if (currentMode === "month") {
   document.getElementById("modalTitle").textContent = dateStr + "월 목표";
-}
-
-if (currentMode === "week") {
+}else if (currentMode === "week") {
   document.getElementById("modalTitle").textContent = dateStr + "주간 목표";
 }
   document.getElementById("modalBackdrop").classList.remove("hidden");
@@ -478,8 +513,10 @@ function loadTodos(date) {
 
   const store = getStore();
   let todos = [];
-
-  if (currentMode === "day") {
+  if (currentMode === "routine") {
+    todos = store.routines; // 루틴 데이터 로드
+  }
+  else if (currentMode === "day") {
     todos = store.todos[date] || [];
   } else if (currentMode === "year") {
     todos = store.goals.year[date] || [];
@@ -600,7 +637,9 @@ function loadTodos(date) {
 function saveTodos(date, todos) {
   const store = getStore();
 
-  if (currentMode === "day") {
+  if (currentMode === "routine") {
+    store.routines = todos;
+  } else if (currentMode === "day") {
     store.todos[date] = todos;
   } else if (currentMode === "year") {
     store.goals.year[date] = todos;
@@ -615,6 +654,8 @@ function saveTodos(date, todos) {
 
 /* ---------- events ---------- */
 window.onload = () => {
+  checkDailyRoutines(); // 앱 시작 시 루틴 체크
+
   const calendar = new FullCalendar.Calendar(
     document.getElementById("calendar"),
     {
@@ -778,14 +819,18 @@ document.addEventListener("keydown", e => {
 
   document.getElementById("btnClose").onclick = closeModal;
 
-  document.getElementById("btnAdd").onclick = () => {
+document.getElementById("btnAdd").onclick = () => {
   const input = document.getElementById("todoInput");
   if (!input.value || !selectedDate) return;
 
   const store = getStore();
   let todos = [];
 
-  if (currentMode === "day") {
+  // 현재 모드에 따라 데이터 배열 선택
+  if (currentMode === "routine") {
+    todos = store.routines || [];
+  } 
+  else if (currentMode === "day") {
     todos = store.todos[selectedDate] || [];
   } 
   else if (currentMode === "year") {
@@ -798,13 +843,14 @@ document.addEventListener("keydown", e => {
     todos = store.goals.week[selectedDate] || [];
   }
 
+  // 루틴 모드에서도 subs 배열을 함께 넣어줌
   todos.push({ text: input.value, done: false, subs: [] });
 
-  saveTodos(selectedDate, todos);
+  saveTodos(selectedDate, todos); //
 
   input.value = "";
   loadTodos(selectedDate);
-  renderGoalPreview();  // ✅ 추가
+  renderGoalPreview(); 
   input.focus();
 };
 
@@ -926,6 +972,11 @@ document.querySelectorAll(".goal-open").forEach(btn => {
     openModal(selectedDate);
   });
 });
+  // 루틴 관리 버튼 클릭 시
+  document.getElementById("btnRoutine").onclick = () => {
+    currentMode = "routine";
+    openModal("매일 할 일"); // 모달 제목을 '매일 할 일'로 표시
+  };
 };
 
 
