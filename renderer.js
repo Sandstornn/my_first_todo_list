@@ -723,79 +723,99 @@ window.onload = () => {
   */
   renderMonthStrip();
 
-  /* 월 선택 scroll picker*/
-  let pickerYear;
-  let pickerMonth;
-  function openYmPicker() {
+  /* 월 선택 scroll picker (순환 로직 및 휠 방식 반영) */
+  /* 월 선택 scroll picker (진짜 휠 방식 순환 로직) */
+let pickerYear;
+let pickerMonth;
+
+
+function openYmPicker() {
   const backdrop = document.getElementById("ymBackdrop");
   const yearList = document.getElementById("yearList");
   const monthList = document.getElementById("monthList");
 
-  yearList.innerHTML = "";
-  monthList.innerHTML = "";
-
+  // 1. 초기값 설정
   pickerYear = currentDate.getFullYear();
-  pickerMonth = currentDate.getMonth(); // 0-based
+  pickerMonth = currentDate.getMonth();
 
-  /* 스크롤 할 떄 선택 항목이 항상 중앙으로 오게 해주는 함수 */
-  function scrollItemToCenter(container, item) {
-  const cRect = container.getBoundingClientRect();
-  const iRect = item.getBoundingClientRect();
-
-  const scrollTop = (iRect.top + iRect.height / 2) - (cRect.top + cRect.height / 2);
-
-  container.scrollBy({
-    top: scrollTop,
-    behavior: "smooth"
-  });
-
-  
-}
-
-  // 연도 (현재 기준 ±5년)
-  for (let y = pickerYear - 5; y <= pickerYear + 5; y++) {
-    const el = document.createElement("div");
-    el.className = "ym-item" + (y === pickerYear ? " active" : "");
-    el.textContent = `${y}년`;
-    el.onclick = () => {
-      pickerYear = y;
-      document.querySelectorAll("#yearList .ym-item")
-        .forEach(i => i.classList.remove("active"));
-      el.classList.add("active");
-      scrollItemToCenter(yearList, el); // ✅ 추가
-    };
-    yearList.appendChild(el);
-  }
-
-  // 월
-  for (let m = 0; m < 12; m++) {
-    const el = document.createElement("div");
-    el.className = "ym-item" + (m === pickerMonth ? " active" : "");
-    el.textContent = `${m + 1}월`;
-    el.onclick = () => {
-      pickerMonth = m;
-      document.querySelectorAll("#monthList .ym-item")
-        .forEach(i => i.classList.remove("active"));
-      el.classList.add("active");
-
-      /*여기도 선택 항목 중앙정렬 추가*/
-      scrollItemToCenter(monthList, el);
-    };
-    monthList.appendChild(el);
-  }
-
-  // 일단 보이게 하기
   backdrop.classList.remove("hidden");
 
-  // 그 다음 프레임에 중앙 정렬
-  requestAnimationFrame(() => {
-    const yActive = yearList.querySelector(".ym-item.active");
-    const mActive = monthList.querySelector(".ym-item.active");
-    if (yActive) scrollItemToCenter(yearList, yActive);
-    if (mActive) scrollItemToCenter(monthList, mActive);
-  });
+  function scrollItemToCenter(container, item) {
+    if (!item) return;
+    const cRect = container.getBoundingClientRect();
+    const iRect = item.getBoundingClientRect();
+    const scrollTop = (iRect.top + iRect.height / 2) - (cRect.top + cRect.height / 2);
+    container.scrollBy({ top: scrollTop, behavior: "smooth" });
+  }
 
+  // --- [왼쪽] 연도 바퀴 (독립형 무한 느낌) ---
+  function renderYears() {
+    yearList.innerHTML = "";
+    // 현재 해 기준 ±30년 생성
+    for (let y = pickerYear - 30; y <= pickerYear + 30; y++) {
+      const el = document.createElement("div");
+      el.className = "ym-item" + (y === pickerYear ? " active" : "");
+      el.textContent = `${y}년`;
+      el.onclick = () => {
+        pickerYear = y;
+        yearList.querySelectorAll(".ym-item").forEach(i => i.classList.remove("active"));
+        el.classList.add("active");
+        scrollItemToCenter(yearList, el);
+      };
+      yearList.appendChild(el);
+    }
+    requestAnimationFrame(() => {
+      const active = yearList.querySelector(".ym-item.active");
+      if (active) scrollItemToCenter(yearList, active);
+    });
+  }
+
+  // --- [오른쪽] 월 바퀴 (진짜 무한 순환형) ---
+  function renderMonths() {
+    monthList.innerHTML = "";
+    
+    // 무한 휠 느낌을 위해 1~12월을 5세트 반복 (총 60개)
+    for (let loop = 0; loop < 5; loop++) {
+      for (let m = 0; m < 12; m++) {
+        const el = document.createElement("div");
+        // 5세트 중 정중앙(index 2) 블록의 해당 월을 초기 active로 설정
+        const isInitialActive = (loop === 2 && m === pickerMonth);
+        el.className = "ym-item" + (isInitialActive ? " active" : "");
+        el.textContent = `${m + 1}월`;
+        el.dataset.month = m;
+
+        el.onclick = () => {
+          pickerMonth = m;
+          monthList.querySelectorAll(".ym-item").forEach(item => item.classList.remove("active"));
+          el.classList.add("active");
+          scrollItemToCenter(monthList, el);
+        };
+        monthList.appendChild(el);
+      }
+    }
+
+    requestAnimationFrame(() => {
+      // 5개 세트 중 정중앙(2번째 인덱스) 세트로 스크롤을 먼저 보내서 무한 느낌을 줍니다.
+      const monthItems = monthList.querySelectorAll(`[data-month="${pickerMonth}"]`);
+      const centerMonth = monthItems[2]; 
+      if (centerMonth) scrollItemToCenter(monthList, centerMonth);
+    });
+  }
+
+  renderYears();
+  renderMonths();
 }
+
+// --- [확인 버튼] 스트립 5개 노출 로직 연동 ---
+document.getElementById("btnYmConfirm").onclick = () => {
+  // 1. 선택한 연/월로 기준 날짜 변경
+  currentDate = new Date(pickerYear, pickerMonth, 1);
+  calendar.gotoDate(currentDate);
+  
+  // 2. 상단 스트립 렌더링 (이미 코드에 있는 -2~+2 로직이 작동함)
+  renderMonthStrip(); 
+  closeYmPicker();
+};
 function closeYmPicker() {
   document.getElementById("ymBackdrop").classList.add("hidden");
 }

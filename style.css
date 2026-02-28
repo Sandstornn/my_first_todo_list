@@ -372,7 +372,7 @@ body{
 
 .ym-column{
   width:120px;
-  max-height:220px;
+  height:220px;
   overflow-y:auto;
   border:1px solid var(--line);
   border-radius:12px;
@@ -382,12 +382,20 @@ body{
   scrollbar-width: none; 
 }
 
+/* Chrome, Safari, Edge 스크롤바 숨기기 */
+.ym-column::-webkit-scrollbar {
+  display: none;
+}
+
 .ym-item{
-  padding:10px;
+  height: 40px;
+  line-height: 40px;
+  padding:0 10px;
   text-align:center;
   cursor:pointer;
   font-weight:600;
   color:#9ca3af;
+  box-sizing: border-box;
 }
 
 .ym-item.active{
