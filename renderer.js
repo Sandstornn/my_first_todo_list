@@ -526,12 +526,50 @@ function loadTodos(date) {
     todos = store.goals.week[date] || [];
   }
 
+  // [Step 3] 스마트 정렬 로직 추가
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
+  const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
 
-  // [추가] 완료된 항목(done: true)은 뒤로(1), 미완료는 앞으로(-1) 정렬
   todos.sort((a, b) => {
-    if (a.done === b.done) return 0;
-    return a.done ? 1 : -1;
+    // 1. 완료 상태 우선 비교 (완료된 것은 무조건 뒤로)
+    if (a.done !== b.done) return a.done ? 1 : -1;
+
+    // 2. 미완료 항목 내에서의 정렬
+    if (!a.done) {
+      // 시간 문자열(HH:mm)을 분 단위 숫자로 변환
+      const getTimeVal = (t) => {
+        if (!t) return null;
+        const [h, m] = t.split(":").map(Number);
+        return h * 60 + m;
+      };
+
+      const timeA = getTimeVal(a.time);
+      const timeB = getTimeVal(b.time);
+
+      // 시간이 지났는지 여부 확인 (오늘 날짜일 때만 적용)
+      const isPassedA = timeA !== null && date === todayStr && timeA < currentTimeInMinutes;
+      const isPassedB = timeB !== null && date === todayStr && timeB < currentTimeInMinutes;
+
+      // 우선순위 점수 계산 (낮을수록 위로)
+      const getPriority = (time, isPassed) => {
+        if (time === null) return 1; // 2순위: 종일 일정
+        if (isPassed) return 2;      // 3순위: 시간이 지난 일정
+        return 0;                    // 1순위: 앞으로 올 일정
+      };
+
+      const priA = getPriority(timeA, isPassedA);
+      const priB = getPriority(timeB, isPassedB);
+
+      if (priA !== priB) return priA - priB;
+
+      // 같은 그룹 내에서는 시간순으로 정렬
+      if (timeA !== null && timeB !== null) return timeA - timeB;
+    }
+
+    return 0; // 나머지(둘 다 완료됨 등)는 순서 유지
   });
+
 
   todos.forEach((todo, idx) => {
     /* ---------- 상위 todo ---------- */
@@ -564,6 +602,56 @@ function loadTodos(date) {
       saveTodos(date, todos);
     };
 
+    // 시간 버튼
+    let timeWrapper = null;
+    if(currentMode === "day"){
+      timeWrapper = document.createElement("div");
+timeWrapper.className = "todo-time-wrapper";
+timeWrapper.onclick = e => e.stopPropagation(); // 부모 클릭(sub 토글) 방지
+
+const renderDisplay = () => {
+  timeWrapper.innerHTML = "";
+
+  // 1. 시간이 없을 때 (All-day 상태)
+  if (!todo.time) {
+    const clockBtn = document.createElement("div");
+    clockBtn.className = "todo-time-display";
+    clockBtn.textContent = "🕒";
+    clockBtn.onclick = () => {
+      todo.time = "12:00"; // 클릭 시 기본값 부여
+      renderDisplay();     // 즉시 입력창으로 전환
+    };
+    timeWrapper.appendChild(clockBtn);
+  } 
+  // 2. 시간이 있을 때 (시간 지정 상태)
+  else {
+    const timeInput = document.createElement("input");
+    timeInput.type = "time";
+    timeInput.className = "todo-time-input-native";
+    timeInput.value = todo.time;
+
+    // 시간 변경 시 저장
+    timeInput.onchange = () => {
+      todo.time = timeInput.value || null;
+      saveTodos(date, todos);
+    };
+
+    // 💡 [추가] 시간 제거 버튼 (X)
+    const clearBtn = document.createElement("button");
+    clearBtn.className = "todo-time-clear-inline";
+    clearBtn.textContent = "✕";
+    clearBtn.onclick = () => {
+      todo.time = null; // 시간 데이터 삭제
+      saveTodos(date, todos);
+      loadTodos(date); // UI 갱신 (다시 시계 아이콘으로)
+    };
+
+    timeWrapper.append(timeInput, clearBtn);
+  }
+};
+      renderDisplay();
+  }
+
     const del = document.createElement("button");
     del.className = "todo-del";
     del.textContent = "✕";
@@ -574,7 +662,12 @@ function loadTodos(date) {
       loadTodos(date);
     };
 
-    item.append(check, text, del);
+    // 목표에서는 시간 떼기
+    if (timeWrapper) {
+      item.append(check, text, timeWrapper, del);
+    } else {
+      item.append(check, text, del);
+    }
     list.appendChild(item);
 
     /* ---------- 🔥 sub를 "바로 아래"에 끼워 넣기 ---------- */
@@ -650,26 +743,114 @@ function saveTodos(date, todos) {
   }
 
   setStore(store);
+
+  // 화면 갱신
+  if (window.mainCalendar) {
+    window.mainCalendar.refetchEvents();
+  }
 }
 
 /* ---------- events ---------- */
 window.onload = () => {
   checkDailyRoutines(); // 앱 시작 시 루틴 체크
 
-  const calendar = new FullCalendar.Calendar(
-    document.getElementById("calendar"),
-    {
-      initialView: "dayGridMonth",
-      locale: "ko",
-      height: "auto",
-      headerToolbar: false,
-      dateClick(info) {
-        currentMode = "day";
-        openModal(info.dateStr);
+  /* window.onload 내부의 캘린더 설정 부분 */
+  const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
+  initialView: "dayGridMonth",
+  locale: "ko",
+  height: "100%", 
+  fixedWeekCount: false, // 💡 필요할 때만 6주 표시
+  headerToolbar: false,
+  dayMaxEvents: 2, 
+  
+  events: function(info, successCallback, failureCallback) {
+    successCallback(getFilteredEvents(info.startStr, info.endStr));
+  },
+
+  // 💡 [핵심] 날짜 칸(Cell)이 그려질 때 호출되는 함수
+  dayCellDidMount: function(arg) {
+    const cellEl = arg.el;
+    // 날짜 문자열 추출 (YYYY-MM-DD)
+    const y = arg.date.getFullYear();
+    const m = String(arg.date.getMonth() + 1).padStart(2, '0');
+    const d = String(arg.date.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+
+    // 마우스가 칸 안으로 들어왔을 때
+    /* renderer.js - dayCellDidMount 내부 mouseenter 수정 */
+cellEl.addEventListener('mouseenter', () => {
+  const store = getStore();
+  const dayTasks = store.todos[dateStr] || [];
+  if (dayTasks.length === 0) return;
+
+  const sortedList = [...dayTasks].sort((a, b) => {
+    if (a.time && !b.time) return -1;
+    if (!a.time && b.time) return 1;
+    if (a.time && b.time) return a.time.localeCompare(b.time);
+    return 0;
+  });
+
+  const popover = document.createElement("div");
+  popover.className = "calendar-day-popover";
+  
+  const listHtml = sortedList.map(t => {
+    const timeTag = t.time ? `<span class="tip-time">[${t.time}]</span> ` : `<span class="tip-check">[체크]</span> `;
+    const doneClass = t.done ? "done" : "";
+    return `<div class="tip-item ${doneClass}">${timeTag}${t.text}</div>`;
+  }).join('');
+
+  popover.innerHTML = `<strong>📅 ${m}월 ${d}일 목록</strong><hr>${listHtml}`;
+  document.body.appendChild(popover); // 💡 높이 측정을 위해 먼저 추가
+
+  const rect = cellEl.getBoundingClientRect();
+  const popWidth = popover.offsetWidth;
+  const popHeight = popover.offsetHeight; // 💡 렌더링된 실제 높이 측정
+  const dayOfWeek = arg.date.getDay(); 
+
+  // 1️⃣ 좌우 배치 로직 (기존 유지)
+  if (dayOfWeek >= 4) {
+    popover.style.left = (rect.left - popWidth - 10) + "px";
+    popover.classList.add("left-side"); 
+  } else {
+    popover.style.left = (rect.right + 10) + "px";
+  }
+
+  // 2️⃣ 💡 [확장] 줄(Row) 계산 로직 추가
+  // 달력 뷰의 시작일로부터 며칠이 지났는지 계산하여 현재 칸의 줄 번호를 구합니다.
+  const startOfView = arg.view.activeStart;
+  const diffDays = Math.floor((arg.date - startOfView) / (1000 * 60 * 60 * 24));
+  const rowIndex = Math.floor(diffDays / 7); // 0=1행, 1=2행, 2=3행, 3=4행...
+
+  // 3️⃣ 💡 [상하 배치] 3번째 줄(rowIndex 2)부터는 위로 표시
+  if (rowIndex >= 2) { 
+    // 3, 4, 5, 6번째 줄: 팝오버 바닥을 칸 바닥에 맞춤 (위로 솟음)
+    popover.style.top = (rect.bottom + window.scrollY - popHeight) + "px";
+    popover.classList.add("pop-upward");
+  } else {
+    // 1, 2번째 줄: 기존처럼 위에서 아래로 배치
+    popover.style.top = (rect.top + window.scrollY) + "px";
+  }
+
+  cellEl._popover = popover;
+  cellEl.style.backgroundColor = "#f3f4f6";
+});
+    // 마우스가 칸 밖으로 나갔을 때
+    cellEl.addEventListener('mouseleave', () => {
+      if (cellEl._popover) {
+        cellEl._popover.remove();
+        cellEl._popover = null;
       }
-    }
-  );
+      cellEl.style.backgroundColor = ""; // 색상 원복
+    });
+  },
+
+  dateClick(info) {
+    currentMode = "day";
+    openModal(info.dateStr);
+  }
+});
   calendar.render();
+  window.mainCalendar = calendar;
 
 // 여기부터
  /* =========================
@@ -1042,4 +1223,45 @@ function renderGoalPreview() {
         }
     });
   });
+}
+
+// 일정 보여주는 코드
+function getFilteredEvents(startStr, endStr) {
+  const store = getStore();
+  const events = [];
+  const viewStart = startStr.split('T')[0];
+  const viewEnd = endStr.split('T')[0];
+
+  for (const date in store.todos) {
+    if (date >= viewStart && date < viewEnd) {
+      const dayTasks = store.todos[date] || [];
+      if (dayTasks.length === 0) continue;
+
+      // 💡 [정렬] 시간 일정 우선 -> 그 안에서 시간순 -> 체크리스트 순
+      const sortedFullList = [...dayTasks].sort((a, b) => {
+        if (a.time && !b.time) return -1;
+        if (!a.time && b.time) return 1;
+        if (a.time && b.time) return a.time.localeCompare(b.time);
+        return 0;
+      });
+
+      // 💡 [필터] 캘린더 칸에는 '미완료된 일정'만 바(Bar) 형태로 표시
+      const displayTasks = sortedFullList.filter(t => t.time && !t.done);
+
+      displayTasks.forEach(todo => {
+        events.push({
+          title: todo.text,
+          start: `${date}T${todo.time}:00`,
+          end: `${date}T${todo.time}:01`,
+          allDay: false,
+          color: "#3b82f6",
+          extendedProps: { 
+            // 💡 툴팁에서 사용할 '전체 목록 데이터'를 여기에 담습니다.
+            fullData: sortedFullList 
+          }
+        });
+      });
+    }
+  }
+  return events;
 }

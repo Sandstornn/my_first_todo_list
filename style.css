@@ -9,13 +9,6 @@ h2 {
   text-align: center;
 }
 
-#calendar {
-  max-width: 900px;
-  margin: 0 auto;
-  background: white;
-  padding: 10px;
-  border-radius: 12px;
-}
 
 .modal {
   position: fixed;
@@ -100,13 +93,22 @@ body{
 }
 
 .calendar-wrap{
-  background:var(--panel);
-  border:1px solid var(--line);
+  background: var(--panel);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 14px;
-  /*padding-top: 18px;*/
-  padding-bottom: 24px;
+  border: none !important;
+  overflow:hidden;
+  
+  height: 580px; 
+  
+  /*  꽉 찬 느낌을 위해 패딩을 조절합니다. */
+  padding: 10px 10px 0 10px; 
+  padding-bottom: 20px; /* 아래쪽 화살표 공간 */
+  
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* buttons */
@@ -912,4 +914,262 @@ body{
     color: #334155;
     border-bottom: 2px solid #e2e8f0;
     padding-bottom: 5px;
+}
+
+.todo-time-wrapper {
+  display: flex;
+  align-items: center;
+  background: #f3f4f6; /* 연한 그레이 배경 */
+  border-radius: 20px; /* 완전 둥근 캡슐 모양 */
+  padding: 2px 8px;
+  gap: 4px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.todo-time-wrapper:focus-within {
+  background: #fff;
+  border-color: #c7d2fe;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* 시간 입력 인풋 (네이티브 스타일 숨기기) */
+.todo-time-input-native {
+  border: none !important;
+  background: transparent !important;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  padding: 4px 0;
+
+  width: 100px !important; 
+  padding: 0;
+  margin: 0;
+  text-align: center;
+}
+
+/* 체크리스트 내 시간 선택 */
+/* 시간 표시 버튼 */
+.todo-time-display {
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.todo-time-display:hover {
+  background: #f3f4f6;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+/* 실제 input[type="time"] 스타일 (숨겨져 있다가 활성화) */
+.todo-time-input {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 2px 4px;
+  outline: none;
+  width: 85px; /* 깔끔한 너비 */
+}
+
+/* ❌ 시간 제거 버튼 (X) 디자인 개선 */
+.todo-time-clear-inline {
+  border: none !important;
+  background: #e5e7eb !important; /* 배경을 살짝 어둡게 */
+  color: #6b7280 !important;
+  width: 18px;
+  height: 18px;
+  border-radius: 50% !important; /* 완전 동그라미 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0 !important;
+  line-height: 1;
+}
+
+.todo-time-clear-inline:hover {
+  background: #ef4444 !important; /* 마우스 올리면 빨간색 */
+  color: #fff !important;
+}
+
+/* 기본 시간 입력창에서 시스템 아이콘 숨기기 (직접 입력 유도) */
+.custom-time-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.time-picker-popover {
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 150px;
+}
+
+.custom-time-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 16px; /* 모바일 대응 및 가독성 */
+  text-align: center;
+  outline: none;
+}
+
+.btn-all-day {
+  padding: 8px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+/* style.css */
+.calendar-hover-tooltip {
+  position: absolute;
+  z-index: 10000;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  color: #1f2937;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  min-width: 180px;
+}
+
+.tip-item {
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+/* 💡 완료된 항목 줄 긋기 */
+.tip-item.done {
+  text-decoration: line-through;
+  color: #9ca3af;
+  opacity: 0.7;
+}
+
+.tip-time { color: #2563eb; font-weight: bold; font-size: 11px; }
+.tip-check { color: #059669; font-weight: bold; font-size: 11px; }
+
+/* 날짜 칸 호버 팝업 스타일 */
+.calendar-day-popover {
+  position: absolute;
+  z-index: 99999;
+  background: white;
+  border: 1px solid var(--line);
+  color: #1f2937;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  min-width: 200px;
+  max-width: 300px;
+  animation: fadeIn 0.2s ease-out; /* 은은한 나타나기 효과 */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-5px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.calendar-day-popover hr {
+  margin: 10px 0;
+  border: 0;
+  border-top: 1px solid #f3f4f6;
+}
+
+.tip-item { margin-bottom: 6px; line-height: 1.5; }
+.tip-item.done { text-decoration: line-through; color: #9ca3af; opacity: 0.6; }
+.tip-time { color: #2563eb; font-weight: 700; margin-right: 5px; }
+.tip-check { color: #10b981; font-weight: 700; margin-right: 5px; }
+
+
+/* 1. 캘린더 전체 높이 제한 (화면 하단 뚫고 나가는 것 방지) */
+#calendar {
+  width: 100% !important;
+  height: 100% !important; /* 💡 이제 부모가 560px이므로 100%가 먹힙니다. */
+  background: white;
+  border-radius: var(--radius);
+  overflow: hidden;
+  /* 💡 외곽 테두리를 주면 둥근 모양이 더 선명하게 보입니다. */
+  border: 1px solid var(--line) !important;
+}
+
+/* 💡 캘린더 내 "+n 개" 링크를 강제로 숨깁니다 */
+.fc-daygrid-more-link {
+    display: none !important;
+}
+
+/* 💡 칸 높이를 고정하여 링크가 사라진 자리가 깔끔하게 유지되도록 합니다 */
+.fc-daygrid-day-frame {
+    height: 50px !important;
+    overflow: hidden !important;
+}
+
+/* 3. 칸 내부의 이벤트 영역 설정 */
+.fc-daygrid-day-events {
+  flex-grow: 1;
+  overflow-y: hidden; /* 💡 내부에서 칸이 밀리지 않도록 설정합니다. */
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border: none !important; /* 👈 가장 바깥쪽 격자 선을 지워 한 줄로 보이게 함 */
+}
+
+.fc-daygrid-day:last-child { 
+  border-right: none !important; 
+}
+
+/* 전체 테이블 기본 border 제거 */
+.fc .fc-scrollgrid,
+.fc .fc-scrollgrid table {
+  border: none !important;
+}
+
+
+/* 모든 셀 기본 border 제거 */
+.fc th,
+.fc td {
+  border: none !important;
+}
+
+
+/* 3️⃣ 셀 내부 grid 선 그리기 (오른쪽 + 아래만) */
+.fc .fc-daygrid-day,
+.fc .fc-col-header-cell {
+  border-right: 1px solid #e5e7eb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+/* 마지막 열 (7번째) right 제거 */
+.fc .fc-daygrid-day:nth-child(7),
+.fc .fc-col-header-cell:nth-child(7) {
+  border-right: none !important;
+}
+
+/* 마지막 행 bottom 제거 */
+.fc .fc-daygrid-body tr:last-of-type .fc-daygrid-day {
+  border-bottom: none !important;
 }
