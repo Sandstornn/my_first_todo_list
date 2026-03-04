@@ -210,7 +210,16 @@ async function openReportDetail(title, dateList) {
         setStore(updatedStore);
       }
     } catch (err) {
-      aiTextEl.textContent = `⚠️ 분석 실패: ${err.message}`;
+      console.error("AI 분석 중 에러 발생:", err);
+    
+    // 🔥 [핵심] 429 에러(할당량 초과) 발생 시 사용자 맞춤 메시지 출력
+    if (err.message.includes("429") || err.message.includes("quota")) {
+      aiTextEl.innerHTML = ` ⚠️ 오늘 사용량을 모두 소진했습니다.\n Gemini API 등급을 업그레이드하거나, 내일 다시 시도해 주세요.`;
+    } else {
+      // 그 외 일반적인 에러 처리
+      aiTextEl.innerText = `⚠️ 분석 실패: ${err.message}`;
+      aiTextEl.style.color = "#ef4444";
+    }
     }
   })();
 }

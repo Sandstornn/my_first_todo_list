@@ -17,5 +17,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   sendNotification: (data) => ipcRenderer.send('notify', data),
   encryptKey: (text) => ipcRenderer.invoke('encrypt-key', text),
   decryptKey: (encText) => ipcRenderer.invoke('decrypt-key', encText),
-  getAISummary: (data) => ipcRenderer.invoke('get-ai-summary', data)
+  // getAISummary: (data) => ipcRenderer.invoke('get-ai-summary', data)
 });

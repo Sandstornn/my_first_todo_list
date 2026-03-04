@@ -127,6 +127,13 @@ ipcMain.handle('get-ai-summary', async (event, { allActivities, apiKey }) => {
       })
     });
 
+    // 💡 응답이 ok가 아닐 때(할당량 초과 등) 상세 내용을 출력하도록 추가
+if (!response.ok) {
+  const errorDetail = await response.json();
+  console.error("Gemini API 서버 에러:", errorDetail);
+  throw new Error(`API 에러: ${response.status} - ${errorDetail.error.message}`);
+}
+
     const data = await response.json();
     
     if (data.candidates && data.candidates[0].content.parts[0].text) {
