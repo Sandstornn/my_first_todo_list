@@ -27,9 +27,13 @@
     </div>
 
     <div class="actions">
+      <div class="alarm-toggle-wrap">
+      <span id="alarmStatusLabel" style="font-size: 12px; color: var(--muted);">알림 on</span>
+      <input type="checkbox" id="alarmToggle" class="toggle-checkbox" checked>
+      </div>
       <button id="btnRoutine" class="btn btn-secondary">매일 할 일</button>
-      <button id="btnExportCalendar" class="btn">data download</button>
-      <label class="btn btn-secondary" for="fileImportCalendar">data upload</label>
+      <button id="btnExportCalendar" class="btn">export data</button>
+      <label class="btn btn-secondary" for="fileImportCalendar">import data</label>
       <input id="fileImportCalendar" type="file" accept="application/json" hidden />
     </div>
   </header>
@@ -45,23 +49,34 @@
     <section class="calendar-wrap">
       <div id="calendar"></div>
     </section>
-    <button id="toReport" class="go-down">▼</button>
+    <button id="toReport" class="go-down"aria-label="리포트로 이동">
+      <svg width="80" height="24" viewBox="0 0 80 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 8l30 8 30-8" />
+      </svg>
+    </button>
   </main>
   </section>
 
   <!-- 아랫쪽 두번째 페이지.(진행률 표시용)-->
   <section id="reportPage" class="page">
   <header class="topbar">
-    <button id="toCalendar" class="go-up">▲</button>
+    <button id="toCalendar" class="go-up">
+      <svg width="80" height="24" viewBox="0 0 80 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 16l30-8 30 8" />
+      </svg>
+    </button>
     <div class="brand">
-      <div class="brand-title">리포트</div>
+      <div class="brand-title">Report</div>
       <div class="brand-sub">주 / 월 단위 진행률 요약</div>
     </div>
     <div class="actions">
-      <button id="btnExportReport" class="btn">data download</button>
-      <label class="btn btn-secondary" for="fileImportReport">data upload</label>
+      <button class="btn btn-secondary" id="btnOpenKeyModal">Gemini API key 설정</button>
+  
+  <button id="btnExportReport" class="btn">export data</button>
+      <label class="btn btn-secondary" for="fileImportReport">import data</label>
       <input id="fileImportReport" type="file" accept="application/json" hidden />
-    </div>
+
+
   </header>
 
 
@@ -105,6 +120,11 @@
 </section>
   </main>
   </section>
+  </div>
+
+<!---제미나이 키 모달--->
+  <div id="keyModalBackdrop" class="backdrop hidden">
+  
   </div>
 
   <!-- Modal -->

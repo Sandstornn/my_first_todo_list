@@ -594,19 +594,59 @@ body{
   z-index: 10001;
 }
 
-/* 아래로 가기 버튼 */
-.go-down {
-  position: fixed;
-  bottom: 18px;
+/* 화살표 버튼 공통 스타일 */
+/* 와이드 화살표 버튼 스타일 */
+.go-down, .go-up {
+  position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 10;
+  
+  /* 배경과 테두리 제거 */
   background: transparent;
   border: none;
-  font-size: 28px;
+  width: 120px; /* 클릭 영역은 넉넉하게 */
+  height: 50px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  opacity: 0.6;
+  transition: all 0.3s ease;
+  color: #94a3b8; /* 기본은 차분한 회색 */
+  padding: 0;
 }
 
+/* 호버 시 화살표 강조 */
+.go-down:hover, .go-up:hover {
+  color: #3b82f6; /* 파란색 포인트 */
+}
+
+/* 아래 버튼 위치 및 움직임 */
+.go-down {
+  bottom: 10px;
+}
+.go-down:hover {
+  transform: translateX(-50%) translateY(8px); /* 아래로 슥 내려감 */
+}
+
+/* 위 버튼 위치 및 움직임 */
+.go-up {
+  top: 10px;
+}
+.go-up:hover {
+  transform: translateX(-50%) translateY(-8px); /* 위로 슥 올라감 */
+}
+
+/* 은은한 숨쉬기 애니메이션 (선택) */
+@keyframes float {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.go-down svg, .go-up svg {
+  animation: float 3s infinite ease-in-out;
+}
 
 #pageWrapper {
   height: 200vh;
@@ -621,18 +661,6 @@ body{
   transform: translateY(-100vh);
 }
 
-.go-up {
-  position: fixed;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  opacity: 0.6;
-  z-index: 20;
-}
 
 /* 기본: report 전용 버튼 숨김 */
 #reportPage .go-up {
@@ -806,12 +834,34 @@ body{
   margin: 0;
 }
 
-/* 목표 카드 내 텍스트 영역 스타일 */
 .goal-preview {
   margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px; /* 항목 간의 간격 넓힘 */
+  gap: 8px;
+  
+  /* 🔥 [핵심] 최대 높이를 지정하고 넘치면 스크롤을 생성합니다. */
+  max-height: 240px; 
+  overflow-y: auto;
+  padding-right: 8px; /* 스크롤바와 텍스트 사이 간격 */
+}
+
+/* 💡 스크롤바를 얇고 깔끔하게 디자인합니다. */
+.goal-preview::-webkit-scrollbar {
+  width: 4px;
+}
+
+.goal-preview::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.goal-preview::-webkit-scrollbar-thumb {
+  background: #d1d5db; /* 연한 회색 */
+  border-radius: 10px;
+}
+
+.goal-preview::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 /* 개별 목표 문구 스타일 */
@@ -847,7 +897,13 @@ body{
 
 /* 카드 내부 전체적인 여백 살짝 조정 */
 .goal-card {
+  background: #f3f4f6;
+  border-radius: 16px;
   padding: 12px 12px 12px 24px;
+  height: 240px; /* 💡 높이를 고정하여 스크롤이 작동하게 합니다. */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
 }
 
 
@@ -1173,3 +1229,46 @@ body{
 .fc .fc-daygrid-body tr:last-of-type .fc-daygrid-day {
   border-bottom: none !important;
 }
+
+
+
+/* 토글 스위치 스타일 */
+.alarm-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 10px;
+}
+
+.toggle-checkbox {
+  appearance: none;
+  width: 34px;
+  height: 18px;
+  background: #d1d5db;
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle-checkbox:checked {
+  background: #6366f1; /* 인디고 색상 */
+}
+
+.toggle-checkbox::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s;
+}
+
+.toggle-checkbox:checked::before {
+  transform: translateX(16px);
+}
+
+

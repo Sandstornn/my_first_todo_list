@@ -1,7 +1,21 @@
 require('dotenv').config(); // ✅ .env 파일 로드
-const { app, BrowserWindow, Menu, ipcMain } = require("electron"); // ✅ ipcMain 추가
+const { app, BrowserWindow, Menu, ipcMain, Notification,safeStorage } = require("electron"); // ✅ ipcMain 추가
 const path = require("path");
 const { GoogleGenerativeAI } = require("@google/generative-ai"); // ✅ Gemini 라이브러리 추가
+
+// 💡 암호화 핸들러: 평문을 받아서 암호화된 문자열 반환
+ipcMain.handle('encrypt-key', (event, rawText) => {
+  if (!safeStorage.isEncryptionAvailable()) return rawText;
+  const buffer = safeStorage.encryptString(rawText);
+  return buffer.toString('latin1'); // localStorage 저장을 위해 문자열로 변환
+});
+
+// 💡 복호화 핸들러: 암호문을 받아서 다시 평문으로 복구
+ipcMain.handle('decrypt-key', (event, encryptedText) => {
+  if (!safeStorage.isEncryptionAvailable()) return encryptedText;
+  const buffer = Buffer.from(encryptedText, 'latin1');
+  return safeStorage.decryptString(buffer);
+});
 
 // 1. Gemini AI 초기화
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -13,6 +27,15 @@ if (!gotLock) {
   app.quit();
   return;
 }
+
+// 렌더러로부터 알림 요청을 받는 통로(IPC)를 만듭니다.
+ipcMain.on('notify', (event, { title, body }) => {
+  new Notification({ 
+    title: title, 
+    body: body,
+    silent: false // 소리 재생 여부
+  }).show();
+});
 
 let mainWindow;
 
@@ -30,7 +53,7 @@ function createWindow() {
 
   mainWindow.loadFile("index.html");
 }
-
+/* 이거는 .env 코드
 ipcMain.handle('get-ai-summary', async (event, activities) => {
   try {
     // 키가 제대로 로드되었는지 확인용 로그 (앞부분 4자리만 출력)
@@ -68,6 +91,55 @@ ipcMain.handle('get-ai-summary', async (event, activities) => {
     // return `메인 에러: ${error.message}`;
   }
 });
+*/
+
+// main.js
+
+// 💡 렌더러에서 보낸 데이터와 복호화된 키를 인자로 받습니다.
+ipcMain.handle('get-ai-summary', async (event, { allActivities, apiKey }) => {
+  try {
+    // ❌ 기존: const key = process.env.GEMINI_API_KEY;
+    // ✅ 변경: 전달받은 apiKey를 URL에 바로 적용합니다.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `너는 자기계발 전문가야.
+  
+  [분석 요청]
+  1. 사용자가 설정한 '상위 목표(연간/월간/주간)'와 실제 '날짜별 할 일'을 대조해.
+  2. 연간/월간/주간 목표 달성에 하루 하루 체크리스트가 얼마나 부합하는지 분석해.
+  3. 빈말은 하지 말고 실제로 있었던 활동들을 기반으로 솔직하게 분석해줘. 목표 달성에 도움이 되는 활동과 그렇지 않은 활동을 구분해서 알려줘.
+  4. 정리해서 3개 정도 항목, 각 항목 당 3줄으로 요약된 것만 보여줘.
+  5. 마지막에 요약해서 잘한 점, 못한 점, 개선할 점을 각각 1줄로 알려줘.
+
+  [주의사항]
+  - 답변에 **, ##, -, * 와 같은 마크다운 기호를 절대 사용하지 마세요.
+  - 모든 답변은 순수 텍스트(Plain Text)로만 구성해야 합니다.
+
+  데이터 목록:${JSON.stringify(allActivities)}`
+          }]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.candidates && data.candidates[0].content.parts[0].text) {
+      return data.candidates[0].content.parts[0].text;
+    } else {
+      throw new Error("API 키가 올바르지 않거나 응답 형식이 잘못되었습니다.");
+    }
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    throw error;
+  }
+});
+
 
 app.whenReady().then(createWindow);
 

@@ -15,12 +15,18 @@ function getStore() {
       goals: { year: {}, month: {}, week: {} },
       routines: [],
       lastRoutineDate: null,
-      aiCache: {}
+      aiCache: {},
+      settings: { notificationsEnabled: true }
     };
   }
 
   let parsed = JSON.parse(raw);
 
+  parsed.settings = parsed.settings || {};
+parsed.settings.notificationsEnabled =
+  parsed.settings.notificationsEnabled ?? true;
+parsed.settings.apiKey =
+  parsed.settings.apiKey ?? "";
   // 🔥 레거시 구조 대응 (데이터 날림 방지)
   const hasLegacy = Object.keys(parsed).some(k => k.includes("-"));
   if (hasLegacy && !parsed.todos) {
@@ -80,78 +86,89 @@ function checkDailyRoutines() {
 /* ---------- report detail modal ---------- */
 
 /* ---------- function rendering report detail modal ---------- */
+/* renderer.js */
+
 async function openReportDetail(title, dateList) {
   const store = getStore();
   const content = document.getElementById("reportDetailContent");
   const backdrop = document.getElementById("reportDetailBackdrop");
   const closeX = document.getElementById("btnReportCloseX");
 
-  // 1. 제목 및 내용 초기화
+  // 1. 초기화 및 모달 표시
   document.getElementById("reportDetailTitle").textContent = title;
-  content.innerHTML = "";
+  content.innerHTML = ""; 
+  if (closeX) closeX.onclick = () => backdrop.classList.add("hidden");
 
-  // 2. 닫기 버튼(X) 이벤트 연결
-  if (closeX) {
-    closeX.onclick = () => backdrop.classList.add("hidden");
-  }
-
-  
-
-  // 3. AI 섹션 동적 생성
+  // AI 섹션 생성 (기존 로직 유지)
   const aiSection = document.createElement("div");
   aiSection.className = "ai-summary-container";
   aiSection.innerHTML = `
     <div class="ai-header">🤖 Gemini AI 분석</div>
-    <div id="aiSummaryText" class="ai-summary-text">목표와 세부 실행 내역을 대조 분석 중입니다...</div>
+    <div id="aiSummaryText" class="ai-summary-text">분석 준비 중...</div>
   `;
   content.appendChild(aiSection);
 
-  // AI에게 전달할 데이터 수집
-  let allActivities = [];
+  // --- 🔥 [추가] 상단 목표 섹션 (월간/주간 목표 합쳐서 보여주기) ---
+  const upperGoalsContainer = document.createElement("div");
+  upperGoalsContainer.className = "report-upper-goals";
+  upperGoalsContainer.innerHTML = `<div class="report-day-title">🎯 기간 목표 (월간/주간)</div>`;
+  
+  let hasUpperGoal = false;
+  let allActivities = []; // AI 전달용 데이터 수집
 
-  // renderer.js 내 openReportDetail 함수 중 데이터 수집 부분
-const collectGoals = (goalObj, typeLabel) => {
-  Object.keys(goalObj).forEach(key => {
-    if (title.includes(key.split('-')[0])) { 
-      goalObj[key].forEach(g => {
-        // '목표'임을 강조하고 상태를 명확히 전달
-        allActivities.push(`[필독-상위 ${typeLabel}] 명칭: "${g.text}", 상태: ${g.done ? "달성함" : "아직 미달성(진행중)"}`);
+  // 타이틀에서 연, 월, 주 정보 추출
+  // title 형식 예: "2026년 3월" 또는 "2026년 3월 · 1주"
+  const yearMatch = title.match(/(\d+)년/);
+  const monthMatch = title.match(/(\d+)월/);
+  const weekMatch = title.match(/(\d+)주/);
+
+  if (yearMatch && monthMatch) {
+    const y = yearMatch[1];
+    const m = monthMatch[1].padStart(2, '0');
+    const monthKey = `${y}-${m}`;
+    
+    // 1) 월간 목표 수집 및 렌더링
+    const mGoals = store.goals.month[monthKey] || [];
+    mGoals.forEach(g => {
+      hasUpperGoal = true;
+      allActivities.push(`[월간목표] ${g.text} (${g.done ? "완료" : "미완료"})`);
+      const line = document.createElement("div");
+      line.className = `report-item ${g.done ? "done" : "todo"}`;
+      line.style.borderLeft = "4px solid #3b82f6"; // 월간 목표 강조색
+      line.textContent = `[월간] ${g.done ? "✔" : "✖"} ${g.text}`;
+      upperGoalsContainer.appendChild(line);
+    });
+
+    // 2) 주간 목표 수집 및 렌더링 (주 정보가 있을 때만)
+    if (weekMatch) {
+      const w = weekMatch[1];
+      const weekKey = `${monthKey}-W${w}`;
+      const wGoals = store.goals.week[weekKey] || [];
+      wGoals.forEach(g => {
+        hasUpperGoal = true;
+        allActivities.push(`[주간목표] ${g.text} (${g.done ? "완료" : "미완료"})`);
+        const line = document.createElement("div");
+        line.className = `report-item ${g.done ? "done" : "todo"}`;
+        line.style.borderLeft = "4px solid #10b981"; // 주간 목표 강조색
+        line.textContent = `[주간] ${g.done ? "✔" : "✖"} ${g.text}`;
+        upperGoalsContainer.appendChild(line);
       });
     }
-  });
-};
+  }
 
-  collectGoals(store.goals.year, "연간 목표");
-  collectGoals(store.goals.month, "월간 목표");
-  collectGoals(store.goals.week, "주간 목표");
+  if (hasUpperGoal) {
+    content.appendChild(upperGoalsContainer);
+  }
 
-  // --- B. 일일 활동 및 세부 항목(subs) 수집 ---
+  // --- 2. 일일 활동 렌더링 ---
   dateList.forEach(date => {
     if (!store.todos[date]) return;
-
     const dayBlock = document.createElement("div");
     dayBlock.className = "report-day";
     dayBlock.innerHTML = `<div class="report-day-title">${formatDateKorean(date)}</div>`;
-
-    // renderer.js의 openReportDetail 함수 내부 수정
+    
     store.todos[date].forEach(t => {
-      // 1. 메인 할 일 정보 생성
-      let activityInfo = `[${date}] 할 일: ${t.text} (${t.done ? "완료" : "미완료"})`;
-
-      // 2. 해당 할 일에 달린 세부 항목(대댓글)들을 바로 아래에 붙여줌
-      if (t.subs && t.subs.length > 0) {
-        const subDetails = t.subs
-          .filter(s => s.text && s.text.trim() !== "") // 내용이 있는 것만 포함
-          .map(s => `   └ [대댓글/세부사항]: ${s.text} (${s.done ? "완료" : "미완료"})`)
-          .join("\n");
-        
-        activityInfo += `\n${subDetails}`;
-      }
-
-      // AI 전송 배열에 추가
-      allActivities.push(activityInfo);
-
-      // (참고) 화면에 보이는 리스트 렌더링 로직은 기존대로 유지
+      allActivities.push(`[${date}] 할 일: ${t.text} (${t.done ? "완료" : "미완료"})`);
       const line = document.createElement("div");
       line.className = `report-item ${t.done ? "done" : "todo"}`;
       line.textContent = `${t.done ? "✔" : "✖"} ${t.text}`;
@@ -162,52 +179,40 @@ const collectGoals = (goalObj, typeLabel) => {
 
   backdrop.classList.remove("hidden");
 
-  // 2. 캐시 확인 로직 도입
-  // store.aiCache가 없으면 초기화
-  store.aiCache = store.aiCache || {};
-  
-  const currentDataStr = JSON.stringify(allActivities);
-  const cachedEntry = store.aiCache[title]; // 리포트 제목을 키로 사용
+  // --- 3. 비동기 AI 분석 (기존 로직 유지) ---
+  const aiTextEl = aiSection.querySelector("#aiSummaryText");
+  const encryptedKey = store.settings?.apiKey || "";
 
-  
-  // 4. AI 요약 호출
-  const aiTextEl = document.getElementById("aiSummaryText");
-
-  // 해당 리포트의 기존 데이터와 현재 데이터가 완전히 일치하는지 확인
-  if (cachedEntry && cachedEntry.data === currentDataStr) {
-    console.log(`[AI Cache Hit] "${title}" 리포트의 변경사항이 없어 캐시된 내용을 표시합니다.`);
-    
-    aiTextEl.innerText = cachedEntry.summary;
-    // 통신 없이 여기서 종료
+  if (!encryptedKey) {
+    aiTextEl.textContent = "Gemini API 키를 설정하면 분석을 시작합니다.";
     return;
   }
 
-  if (allActivities.length > 0) {
+  (async () => {
     try {
-      aiTextEl.textContent = "🤖 목표 대비 실행력을 분석하고 있습니다...";
-      const summary = await window.electronAPI.getAISummary(allActivities);
-      
+      const currentDataStr = JSON.stringify(allActivities);
+      const cachedEntry = store.aiCache?.[title];
+      if (cachedEntry && cachedEntry.data === currentDataStr) {
+        aiTextEl.innerText = cachedEntry.summary;
+        return;
+      }
+
+      aiTextEl.innerText = "데이터 분석 중...";
+      const realKey = await window.electronAPI.decryptKey(encryptedKey);
+      const summary = await window.electronAPI.getAISummary({ allActivities, apiKey: realKey });
+
       if (summary) {
-        // 줄바꿈 가공 후 화면 표시
-        const cleanSummary = summary
-          .replace(/[#*]/g, '')
-          .replace(/\n{3,}/g, "\n\n")
-          .trim();
-
+        const cleanSummary = summary.replace(/[#*]/g, '').trim();
         aiTextEl.innerText = cleanSummary;
-
-        // 새로운 결과를 캐시에 저장하고 로컬 스토리지에 기록합니다.
-        store.aiCache[title] = {
-          data: currentDataStr,  // 현재 분석한 원본 데이터 문자열
-          summary: cleanSummary // AI의 분석 결과
-        };
-        setStore(store); // 변경된 store를 localStorage에 저장
+        const updatedStore = getStore();
+        updatedStore.aiCache = updatedStore.aiCache || {};
+        updatedStore.aiCache[title] = { data: currentDataStr, summary: cleanSummary };
+        setStore(updatedStore);
       }
     } catch (err) {
-      aiTextEl.textContent = `⚠️ 통신 실패: ${err.message}`;
-      aiTextEl.style.color = "#ef4444";
+      aiTextEl.textContent = `⚠️ 분석 실패: ${err.message}`;
     }
-  }
+  })();
 }
 
 /* ---------- 주 클릭시 날짜 범위 ---------- */
@@ -299,6 +304,13 @@ function renderReport() {
       }
     });
 
+    // 🔥 [추가] 월간 목표 합산 (m.key는 "YYYY-MM" 형식)
+    const monthGoals = store.goals.month[m.key] || [];
+    monthGoals.forEach(g => {
+      total++;
+      if (g.done) done++;
+    });
+
     const percent = total ? Math.round((done / total) * 100) : 0;
 
     // 🔥 month-card를 DOM으로 생성
@@ -350,6 +362,11 @@ function renderReport() {
           weekTodos.push(...store.todos[date]);
         }
       });
+
+      // 🔥 [추가] 주간 목표 수집 (주간 키 형식: "YYYY-MM-Wn")
+      const weekKey = `${m.key}-W${week}`;
+      const weekGoals = store.goals.week[weekKey] || [];
+      weekTodos.push(...weekGoals);
 
       const p = calcProgress(weekTodos);
       const showText = p > 0;
@@ -1086,7 +1103,7 @@ else if (currentMode === "week") {
     if (!ok) return;
 
     const store = getStore();
-    delete store.todos[selectedDate];
+    store.todos[selectedDate] = [];
     setStore(store);
 
     closeModal();
@@ -1178,52 +1195,218 @@ document.querySelectorAll(".goal-open").forEach(btn => {
     currentMode = "routine";
     openModal("매일 할 일"); // 모달 제목을 '매일 할 일'로 표시
   };
+
+  // 알람 코드
+  function startAlarmSystem() {
+  // 1분마다 체크하는 타이머 시작
+  setInterval(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const store = getStore();
+    if (!store.settings.notificationsEnabled) return;
+    const todayTodos = store.todos[todayStr] || [];
+
+    todayTodos.forEach(todo => {
+      // 💡 조건: 시간 설정이 있고, 미완료 상태이며, 아직 알림을 보낸 적 없는 항목
+      if (todo.time && !todo.done && !todo.notified) {
+        const [h, m] = todo.time.split(":").map(Number);
+        const todoTotalMinutes = h * 60 + m;
+
+        // 💡 현재 시간으로부터 정확히 5분 전인지 확인
+        if (todoTotalMinutes - currentTotalMinutes === 5) {
+          window.electronAPI.sendNotification({
+            title: "일정 알림 (5분 전)",
+            body: `[${todo.time}] ${todo.text} 일정이 5분 후 있습니다.`
+          });
+
+          // 중복 알림 방지를 위해 마킹 후 저장
+          todo.notified = true;
+          saveTodos(todayStr, todayTodos);
+        }
+      }
+    });
+  }, 60000); // 60,000ms = 1분
+}
+// 토글 스위치 이벤트 연결 (window.onload 내부에 추가)
+const alarmToggle = document.getElementById("alarmToggle");
+const alarmLabel = document.getElementById("alarmStatusLabel");
+
+alarmToggle.onchange = () => {
+  const store = getStore();
+  store.settings.notificationsEnabled = alarmToggle.checked;
+  setStore(store);
+  
+  alarmLabel.textContent = alarmToggle.checked ? "알림 on" : "알림 off";
+};
+
+// 페이지 로드 시 기존 설정값 반영
+const initialStore = getStore();
+alarmToggle.checked = initialStore.settings.notificationsEnabled;
+alarmLabel.textContent = alarmToggle.checked ? "알림 on" : "알림 off";
+
+// 이거 안쓴듯
+renderGoalPreview();
+
+// 시스템 가동!
+startAlarmSystem();
+
+
 };
 
 
 // 목표에 대한 미리보기 렌더링 함수 (report 페이지)
 function renderGoalPreview() {
   const store = getStore();
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  // 해당 월의 1일이 무슨 요일인지 고려하여 계산합니다.
+  const firstDayOfMonth = new Date(year, today.getMonth(), 1);
+  const week = Math.ceil((today.getDate() + firstDayOfMonth.getDay()) / 7);
 
-  // 연간 목표
+  // 1. 현재 기간에 해당하는 키(Key) 생성
+  const currentYearKey = String(year);
+  const currentMonthKey = `${year}-${month}`;
+  const currentWeekKey = `${year}-${month}-W${week}`;
+
+  // --- 연간 목표 (올해 데이터만) ---
   const yearPreview = document.getElementById("goalYearPreview");
   yearPreview.innerHTML = "";
-  Object.values(store.goals.year).forEach(todos => {
-    todos.forEach(t => {
-      if(!t.done&&t.text){
+  const yearTodos = store.goals.year[currentYearKey] || [];
+  yearTodos.forEach(t => {
+    if(!t.done && t.text) {
       const div = document.createElement("div");
       div.textContent = t.text;
       yearPreview.appendChild(div);
-      }
-    });
+    }
   });
 
-  // 월간 목표
+  // --- 월간 목표 (이번 달 데이터만) ---
   const monthPreview = document.getElementById("goalMonthPreview");
   monthPreview.innerHTML = "";
-  Object.values(store.goals.month).forEach(todos => {
-    todos.forEach(t => {
-        if(!t.done&&t.text){
+  const monthTodos = store.goals.month[currentMonthKey] || [];
+  monthTodos.forEach(t => {
+    if(!t.done && t.text) {
       const div = document.createElement("div");
       div.textContent = t.text;
       monthPreview.appendChild(div);
-        }
-    });
+    }
   });
 
-  // 주간 목표
+  // --- 주간 목표 (이번 주 데이터만) ---
   const weekPreview = document.getElementById("goalWeekPreview");
-  weekPreview.innerHTML = "";
-  Object.values(store.goals.week).forEach(todos => {
-    todos.forEach(t => {
-        if(!t.done&&t.text){
-      const div = document.createElement("div");
-      div.textContent = t.text;
-      weekPreview.appendChild(div);
-        }
+  if (weekPreview) {
+    weekPreview.innerHTML = "";
+    const weekTodos = store.goals.week[currentWeekKey] || [];
+    weekTodos.forEach(t => {
+      if(!t.done && t.text) {
+        const div = document.createElement("div");
+        div.textContent = t.text;
+        weekPreview.appendChild(div);
+      }
     });
-  });
+  }
 }
+/* gemini key modal 코드 */
+
+
+/* renderer.js - 기존의 모든 Gemini 모달 관련 코드를 지우고 이 '재렌더링' 방식으로 교체하세요 */
+/* renderer.js - 이 블록 하나만 Gemini 관련 최종 코드로 사용하세요 */
+
+const GeminiUI = {
+  // 💡 1. HTML을 아예 새로 구워버리는 함수 (페이지 이동 효과와 동일)
+  refresh: function() {
+    const store = getStore();
+    const hasKey = !!(store.settings && store.settings.apiKey);
+    const backdrop = document.getElementById("keyModalBackdrop");
+
+    if (!backdrop) return;
+
+    // 껍데기 내부를 완전히 비우고 새로 작성 (상태값 강제 소멸)
+    backdrop.innerHTML = `
+      <div class="modal" style="width: 360px;">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">Gemini API 설정</div>
+            <div class="modal-sub">AI 분석용 API 키 관리</div>
+          </div>
+          <button class="icon-btn" id="btnKeyModalCloseX">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="password" id="apiKeyInput" class="todo-input" 
+                 placeholder="${hasKey ? '새 키 입력 시 기존 키 교체' : 'API Key를 입력하세요'}" 
+                 style="width: 100%; margin-bottom: 12px;" autocomplete="off">
+          <div id="keyStatusText" style="font-size: 11px; color: ${hasKey ? '#059669' : '#64748b'}; margin-bottom: 16px;">
+            ${hasKey ? '✅ 키가 등록되어 있습니다.' : '⚠️ 저장된 키가 없습니다.'}
+          </div>
+          <div class="modal-footer" style="padding-top: 0;">
+            ${hasKey ? '<button class="btn btn-danger" id="btnGeminiDeleteKey">키 삭제</button>' : ''}
+            <button class="btn" id="btnSaveKey">저장하기</button>
+          </div>
+        </div>
+      </div>
+    `;
+    this.bindEvents();
+  },
+
+  // 💡 2. 새로 만들어진 버튼들에 기능 연결
+  bindEvents: function() {
+    const backdrop = document.getElementById("keyModalBackdrop");
+    const input = document.getElementById("apiKeyInput");
+    const saveBtn = document.getElementById("btnSaveKey");
+    const deleteBtn = document.getElementById("btnGeminiDeleteKey");
+    const closeX = document.getElementById("btnKeyModalCloseX");
+
+    closeX.onclick = () => backdrop.classList.add("hidden");
+
+    saveBtn.onclick = async () => {
+      const val = input.value.trim();
+      if (!val) return alert("키를 입력하세요.");
+      const encrypted = await window.electronAPI.encryptKey(val);
+      const store = getStore();
+      store.settings.apiKey = encrypted;
+      setStore(store);
+      // 이거때문에 input 초기화 안돼서 또 2시간 날렸다. 진짜 조심하자. input뒤에 alert쓰지 말기
+      // alert("성공적으로 저장되었습니다.");
+      // alert가 기본 모달이라 focus를 뺏어가서 그렇다네. 진짜 개빡치네
+      input.value = "";   
+      // backdrop.classList.add("hidden");
+
+      // 💡 삭제 즉시 페이지를 새로고침하듯 다시 렌더링
+        this.refresh(); 
+        document.getElementById("apiKeyInput").focus();
+    };
+
+    if (deleteBtn) {
+      deleteBtn.onclick = async () => {
+        if (!(await openConfirm("저장된 API 키를 삭제할까요?"))) return;
+        const store = getStore();
+        store.settings.apiKey = "";
+        setStore(store);
+        
+        // 💡 삭제 즉시 페이지를 새로고침하듯 다시 렌더링
+        this.refresh(); 
+        document.getElementById("apiKeyInput").focus();
+      };
+    }
+  }
+};
+
+// 💡 3. 모달 열기 버튼 (기존 핸들러를 완전히 대체)
+document.getElementById("btnOpenKeyModal").onclick = (e) => {
+  e.preventDefault();
+  // 🚀 열 때마다 무조건 새로 굽기 (이게 페이지 들렀다 오는 효과를 냅니다)
+  GeminiUI.refresh(); 
+  document.getElementById("keyModalBackdrop").classList.remove("hidden");
+  
+  // 찰나의 시간 뒤에 포커스 (브라우저 버그 방지)
+  setTimeout(() => {
+    const input = document.getElementById("apiKeyInput");
+    if(input) input.focus();
+  }, 50);
+};
 
 // 일정 보여주는 코드
 function getFilteredEvents(startStr, endStr) {
