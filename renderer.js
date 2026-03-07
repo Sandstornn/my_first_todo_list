@@ -62,6 +62,8 @@ function checkDailyRoutines() {
   store.todos[today] = store.todos[today] || [];
 
   store.routines.forEach(routineObj => {
+    // 체크된 루틴은 제외.
+    if (routineObj.done) return;
     // 중복 체크
     const exists = store.todos[today].some(t => t.text === routineObj.text);
     
