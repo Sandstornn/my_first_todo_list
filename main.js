@@ -96,11 +96,13 @@ ipcMain.handle('get-ai-summary', async (event, activities) => {
 // main.js
 
 // 💡 렌더러에서 보낸 데이터와 복호화된 키를 인자로 받습니다.
-ipcMain.handle('get-ai-summary', async (event, { allActivities, apiKey }) => {
+ipcMain.handle('get-ai-summary', async (event, { allActivities, encryptedApiKey }) => {
   try {
-    // ❌ 기존: const key = process.env.GEMINI_API_KEY;
-    // ✅ 변경: 전달받은 apiKey를 URL에 바로 적용합니다.
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
+    if (!safeStorage.isEncryptionAvailable()) throw new Error("Encryption error");
+    const buffer = Buffer.from(encryptedApiKey, 'latin1');
+    const realKey = safeStorage.decryptString(buffer);
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${realKey}`;
 
     const response = await fetch(url, {
       method: 'POST',

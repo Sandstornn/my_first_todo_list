@@ -198,8 +198,9 @@ async function openReportDetail(title, dateList) {
       }
 
       aiTextEl.innerText = "데이터 분석 중...";
-      const realKey = await window.electronAPI.decryptKey(encryptedKey);
-      const summary = await window.electronAPI.getAISummary({ allActivities, apiKey: realKey });
+      // const realKey = await window.electronAPI.decryptKey(encryptedKey);
+      
+      const summary = await window.electronAPI.getAISummary({ allActivities, encryptedApiKey: encryptedKey });
 
       if (summary) {
         const cleanSummary = summary.replace(/[#*]/g, '').trim();
