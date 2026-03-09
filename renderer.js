@@ -27,7 +27,7 @@ parsed.settings.notificationsEnabled =
   parsed.settings.notificationsEnabled ?? true;
 parsed.settings.apiKey =
   parsed.settings.apiKey ?? "";
-  // 🔥 레거시 구조 대응 (데이터 날림 방지)
+  // 레거시 구조 대응 (데이터 날림 방지)
   const hasLegacy = Object.keys(parsed).some(k => k.includes("-"));
   if (hasLegacy && !parsed.todos) {
     parsed = { todos: parsed };
@@ -110,7 +110,7 @@ async function openReportDetail(title, dateList) {
   `;
   content.appendChild(aiSection);
 
-  // --- 🔥 [추가] 상단 목표 섹션 (월간/주간 목표 합쳐서 보여주기) ---
+  // --- [추가] 상단 목표 섹션 (월간/주간 목표 합쳐서 보여주기) ---
   const upperGoalsContainer = document.createElement("div");
   upperGoalsContainer.className = "report-upper-goals";
   upperGoalsContainer.innerHTML = `<div class="report-day-title">🎯 기간 목표 (월간/주간)</div>`;
@@ -316,7 +316,7 @@ function renderReport() {
       }
     });
 
-    // 🔥 [추가] 월간 목표 합산 (m.key는 "YYYY-MM" 형식)
+    // 월간 목표도 더해주기 (m.key는 "YYYY-MM" 형식)
     const monthGoals = store.goals.month[m.key] || [];
     monthGoals.forEach(g => {
       total++;
@@ -325,7 +325,7 @@ function renderReport() {
 
     const percent = total ? Math.round((done / total) * 100) : 0;
 
-    // 🔥 month-card를 DOM으로 생성
+    // month-card를 DOM으로 생성
     const monthCard = document.createElement("div");
     monthCard.className = "month-card";
     monthCard.innerHTML = `
@@ -333,7 +333,7 @@ function renderReport() {
       <div class="percent">${percent}%</div>
     `;
 
-    // ✅ 월 클릭 이벤트
+    // 월 클릭시
     const [year, month] = m.key.split("-").map(Number);
     monthCard.onclick = () => {
       const dates = getMonthRange(year, month - 1);
@@ -375,7 +375,7 @@ function renderReport() {
         }
       });
 
-      // 🔥 [추가] 주간 목표 수집 (주간 키 형식: "YYYY-MM-Wn")
+      // 주간 목표 더해주기 (주간 키 형식: "YYYY-MM-Wn")
       const weekKey = `${m.key}-W${week}`;
       const weekGoals = store.goals.week[weekKey] || [];
       weekTodos.push(...weekGoals);
@@ -384,7 +384,7 @@ function renderReport() {
       const showText = p > 0;
       const textClass = p >= 60 ? "inside" : "outside";
 
-      // 🔥 heat-cell을 DOM으로 생성
+      // heat-cell을 DOM으로 생성
       const cell = document.createElement("div");
       cell.className = "heat-cell";
       if (p > 0) cell.title = `${p}%`;
@@ -400,7 +400,7 @@ function renderReport() {
         </div>
       `;
 
-      // ✅ 주 클릭 이벤트
+      // 주 클릭 이벤트
       const [year, month] = m.key.split("-").map(Number);
       cell.onclick = () => {
         const dates = getWeekRange(year, month - 1, week);

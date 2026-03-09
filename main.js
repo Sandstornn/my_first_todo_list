@@ -3,14 +3,14 @@ const { app, BrowserWindow, Menu, ipcMain, Notification,safeStorage } = require(
 const path = require("path");
 const { GoogleGenerativeAI } = require("@google/generative-ai"); // ✅ Gemini 라이브러리 추가
 
-// 💡 암호화 핸들러: 평문을 받아서 암호화된 문자열 반환
+// 암호화 핸들러: 평문을 받아서 암호화된 문자열 반환
 ipcMain.handle('encrypt-key', (event, rawText) => {
   if (!safeStorage.isEncryptionAvailable()) return rawText;
   const buffer = safeStorage.encryptString(rawText);
   return buffer.toString('latin1'); // localStorage 저장을 위해 문자열로 변환
 });
 
-// 💡 복호화 핸들러: 암호문을 받아서 다시 평문으로 복구
+// 복호화 핸들러: 암호문을 받아서 다시 평문으로 복구
 ipcMain.handle('decrypt-key', (event, encryptedText) => {
   if (!safeStorage.isEncryptionAvailable()) return encryptedText;
   const buffer = Buffer.from(encryptedText, 'latin1');
@@ -95,7 +95,7 @@ ipcMain.handle('get-ai-summary', async (event, activities) => {
 
 // main.js
 
-// 💡 렌더러에서 보낸 데이터와 복호화된 키를 인자로 받습니다.
+// 렌더러에서 보낸 데이터와 복호화된 키를 인자로 받습니다.
 ipcMain.handle('get-ai-summary', async (event, { allActivities, encryptedApiKey }) => {
   try {
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Encryption error");
@@ -129,7 +129,7 @@ ipcMain.handle('get-ai-summary', async (event, { allActivities, encryptedApiKey 
       })
     });
 
-    // 💡 응답이 ok가 아닐 때(할당량 초과 등) 상세 내용을 출력하도록 추가
+    // 응답이 ok가 아닐 때(할당량 초과 등) 상세 내용을 출력하도록 추가
 if (!response.ok) {
   const errorDetail = await response.json();
   console.error("Gemini API 서버 에러:", errorDetail);
