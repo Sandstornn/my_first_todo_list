@@ -699,7 +699,7 @@ const renderDisplay = () => {
     }
     list.appendChild(item);
 
-    /* ---------- 🔥 sub를 "바로 아래"에 끼워 넣기 ---------- */
+    /* ---------- sub를 아래에 끼워 넣기 ---------- */
     if (openedTodoIndex === idx) {
       const subWrap = document.createElement("div");
       subWrap.className = "todo-sub-wrap";
@@ -788,7 +788,7 @@ window.onload = () => {
   initialView: "dayGridMonth",
   locale: "ko",
   height: "100%", 
-  fixedWeekCount: false, // 💡 필요할 때만 6주 표시
+  fixedWeekCount: false, // 필요할 때만 6주 표시
   headerToolbar: false,
   dayMaxEvents: 2, 
   
@@ -796,7 +796,7 @@ window.onload = () => {
     successCallback(getFilteredEvents(info.startStr, info.endStr));
   },
 
-  // 💡 [핵심] 날짜 칸(Cell)이 그려질 때 호출되는 함수
+  // 날짜 칸(Cell)이 그려질 때 호출되는 함수
   dayCellDidMount: function(arg) {
     const cellEl = arg.el;
     // 날짜 문자열 추출 (YYYY-MM-DD)
@@ -829,14 +829,14 @@ cellEl.addEventListener('mouseenter', () => {
   }).join('');
 
   popover.innerHTML = `<strong>📅 ${m}월 ${d}일 목록</strong><hr>${listHtml}`;
-  document.body.appendChild(popover); // 💡 높이 측정을 위해 먼저 추가
+  document.body.appendChild(popover); // 높이 측정을 위해 먼저 추가
 
   const rect = cellEl.getBoundingClientRect();
   const popWidth = popover.offsetWidth;
-  const popHeight = popover.offsetHeight; // 💡 렌더링된 실제 높이 측정
+  const popHeight = popover.offsetHeight; // 렌더링된 실제 높이 측정
   const dayOfWeek = arg.date.getDay(); 
 
-  // 1️⃣ 좌우 배치 로직 (기존 유지)
+  // 1.좌우 배치 로직
   if (dayOfWeek >= 4) {
     popover.style.left = (rect.left - popWidth - 10) + "px";
     popover.classList.add("left-side"); 
@@ -844,13 +844,13 @@ cellEl.addEventListener('mouseenter', () => {
     popover.style.left = (rect.right + 10) + "px";
   }
 
-  // 2️⃣ 💡 [확장] 줄(Row) 계산 로직 추가
+  // 2.줄(Row) 계산 로직 추가
   // 달력 뷰의 시작일로부터 며칠이 지났는지 계산하여 현재 칸의 줄 번호를 구합니다.
   const startOfView = arg.view.activeStart;
   const diffDays = Math.floor((arg.date - startOfView) / (1000 * 60 * 60 * 24));
   const rowIndex = Math.floor(diffDays / 7); // 0=1행, 1=2행, 2=3행, 3=4행...
 
-  // 3️⃣ 💡 [상하 배치] 3번째 줄(rowIndex 2)부터는 위로 표시
+  // 3.3번째 줄부터는 위로 표시
   if (rowIndex >= 2) { 
     // 3, 4, 5, 6번째 줄: 팝오버 바닥을 칸 바닥에 맞춤 (위로 솟음)
     popover.style.top = (rect.bottom + window.scrollY - popHeight) + "px";
@@ -918,23 +918,9 @@ cellEl.addEventListener('mouseenter', () => {
     }
   }
 
-  /* 화살표 너무 짜친다.
-  document.getElementById("monthPrev").onclick = () => {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    calendar.gotoDate(currentDate);
-    renderMonthStrip();
-  };
-
-  document.getElementById("monthNext").onclick = () => {
-    currentDate.setMonth(currentDate.getMonth() + 1);
-    calendar.gotoDate(currentDate);
-    renderMonthStrip();
-  };
-  */
   renderMonthStrip();
 
-  /* 월 선택 scroll picker (순환 로직 및 휠 방식 반영) */
-  /* 월 선택 scroll picker (진짜 휠 방식 순환 로직) */
+  /* 월 선택 scroll picker (휠 방식) */
 let pickerYear;
 let pickerMonth;
 
