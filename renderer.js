@@ -966,7 +966,7 @@ function openYmPicker() {
     });
   }
 
-  // --- [오른쪽] 월 바퀴 (진짜 무한 순환형) ---
+  // --- 월 선택(무한 휠) ---
   function renderMonths() {
     monthList.innerHTML = "";
     
@@ -1002,13 +1002,13 @@ function openYmPicker() {
   renderMonths();
 }
 
-// --- [확인 버튼] 스트립 5개 노출 로직 연동 ---
+// --- [확인 버튼] ---
 document.getElementById("btnYmConfirm").onclick = () => {
   // 1. 선택한 연/월로 기준 날짜 변경
   currentDate = new Date(pickerYear, pickerMonth, 1);
   calendar.gotoDate(currentDate);
   
-  // 2. 상단 스트립 렌더링 (이미 코드에 있는 -2~+2 로직이 작동함)
+  // 2. 상단 스트립 렌더링 (-2~+2 로직 작동함)
   renderMonthStrip(); 
   closeYmPicker();
 };
@@ -1062,7 +1062,7 @@ document.getElementById("btnAdd").onclick = () => {
   // 루틴 모드에서도 subs 배열을 함께 넣어줌
   todos.push({ text: input.value, done: false, subs: [] });
 
-  saveTodos(selectedDate, todos); //
+  saveTodos(selectedDate, todos); 
 
   input.value = "";
   loadTodos(selectedDate);
@@ -1117,14 +1117,13 @@ else if (currentMode === "week") {
     }
   });
   // =========================
-  // 🔽 페이지 슬라이드 코드 (맨 마지막!)
+  // 페이지 슬라이드 코드
   // =========================
   const wrapper = document.getElementById("pageWrapper");
 
   document.getElementById("toReport")?.addEventListener("click", () => {
     wrapper.classList.add("show-report");
 
-    // ✅ 리포트 렌더링 여기서 호출
     renderReport();
   });
 
@@ -1133,7 +1132,7 @@ else if (currentMode === "week") {
   });
 
   // =========================
-// export / import 이벤트 연결
+// export / import 연결
 // =========================
 document.getElementById("btnExportCalendar")
   ?.addEventListener("click", exportData);
@@ -1153,7 +1152,7 @@ document.getElementById("fileImportReport")
 
 
   // =========================
-// 🎯 Goal + 버튼 → 기존 modal 재사용
+// Goal + 버튼 (모달 재사용)
 // =========================
 
 document.querySelectorAll(".goal-open").forEach(btn => {
@@ -1207,12 +1206,12 @@ document.querySelectorAll(".goal-open").forEach(btn => {
     const todayTodos = store.todos[todayStr] || [];
 
     todayTodos.forEach(todo => {
-      // 💡 조건: 시간 설정이 있고, 미완료 상태이며, 아직 알림을 보낸 적 없는 항목
+      // 조건: 시간 설정이 있고, 미완료 상태이며, 아직 알림을 보낸 적 없는 항목
       if (todo.time && !todo.done && !todo.notified) {
         const [h, m] = todo.time.split(":").map(Number);
         const todoTotalMinutes = h * 60 + m;
 
-        // 💡 현재 시간으로부터 정확히 5분 전인지 확인
+        //  현재 시간으로부터 정확히 5분 전인지 확인
         if (todoTotalMinutes - currentTotalMinutes === 5) {
           window.electronAPI.sendNotification({
             title: "일정 알림 (5분 전)",
@@ -1227,7 +1226,7 @@ document.querySelectorAll(".goal-open").forEach(btn => {
     });
   }, 60000); // 60,000ms = 1분
 }
-// 토글 스위치 이벤트 연결 (window.onload 내부에 추가)
+// 토글 스위치 연결 (알람 설정)
 const alarmToggle = document.getElementById("alarmToggle");
 const alarmLabel = document.getElementById("alarmStatusLabel");
 
@@ -1247,7 +1246,6 @@ alarmLabel.textContent = alarmToggle.checked ? "알림 on" : "알림 off";
 // 이거 안쓴듯
 renderGoalPreview();
 
-// 시스템 가동!
 startAlarmSystem();
 
 
@@ -1349,7 +1347,7 @@ const GeminiUI = {
     this.bindEvents();
   },
 
-  // 💡 2. 새로 만들어진 버튼들에 기능 연결
+  // 2. 새로 만들어진 버튼들에 기능 연결
   bindEvents: function() {
     const backdrop = document.getElementById("keyModalBackdrop");
     const input = document.getElementById("apiKeyInput");
@@ -1372,7 +1370,7 @@ const GeminiUI = {
       input.value = "";   
       // backdrop.classList.add("hidden");
 
-      // 💡 삭제 즉시 페이지를 새로고침하듯 다시 렌더링
+      // 삭제 즉시 페이지를 새로고침하듯 다시 렌더링
         this.refresh(); 
         document.getElementById("apiKeyInput").focus();
     };
@@ -1384,7 +1382,7 @@ const GeminiUI = {
         store.settings.apiKey = "";
         setStore(store);
         
-        // 💡 삭제 즉시 페이지를 새로고침하듯 다시 렌더링
+        // 삭제 즉시 페이지를 새로고침하듯 다시 렌더링
         this.refresh(); 
         document.getElementById("apiKeyInput").focus();
       };
@@ -1392,10 +1390,10 @@ const GeminiUI = {
   }
 };
 
-// 💡 3. 모달 열기 버튼 (기존 핸들러를 완전히 대체)
+// 3. 모달 열기 버튼 (기존 핸들러를 완전히 대체)
 document.getElementById("btnOpenKeyModal").onclick = (e) => {
   e.preventDefault();
-  // 🚀 열 때마다 무조건 새로 굽기 (이게 페이지 들렀다 오는 효과를 냅니다)
+  // 열 때마다 무조건 새로 굽기 (이게 페이지 들렀다 오는 효과를 냅니다)
   GeminiUI.refresh(); 
   document.getElementById("keyModalBackdrop").classList.remove("hidden");
   
@@ -1426,7 +1424,7 @@ function getFilteredEvents(startStr, endStr) {
         return 0;
       });
 
-      // 💡 [필터] 캘린더 칸에는 '미완료된 일정'만 바(Bar) 형태로 표시
+      // [필터] 캘린더 칸에는 '미완료된 일정'만 바(Bar) 형태로 표시
       const displayTasks = sortedFullList.filter(t => t.time && !t.done);
 
       displayTasks.forEach(todo => {
@@ -1437,7 +1435,7 @@ function getFilteredEvents(startStr, endStr) {
           allDay: false,
           color: "#3b82f6",
           extendedProps: { 
-            // 💡 툴팁에서 사용할 '전체 목록 데이터'를 여기에 담습니다.
+            // 표시될 '전체 목록 데이터' 담기.
             fullData: sortedFullList 
           }
         });
